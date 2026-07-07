@@ -1,0 +1,431 @@
+/* ─────────────────────────────
+   Páginas de auth / admin
+   ───────────────────────────── */
+
+.page-auth,
+.page-admin {
+  background: #0b1020;
+  color: #f5f7ff;
+  min-height: 100vh;
+}
+
+/* Wrapper general */
+.auth-wrapper,
+.admin-wrapper {
+  max-width: 960px;
+  margin: 2rem auto 3rem;
+}
+
+/* Tarjeta de login */
+.auth-card {
+  background: #151a2b;
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.auth-card h2 {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+.auth-subtitle {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #b3b9d8;
+  font-size: 0.95rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.auth-field span {
+  color: #c1c7e2;
+}
+
+.auth-field input {
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0f1422;
+  color: #f5f7ff;
+  font-size: 0.95rem;
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: #4b8fff;
+  box-shadow: 0 0 0 1px rgba(75, 143, 255, 0.5);
+}
+
+.auth-submit {
+  margin-top: 0.5rem;
+}
+
+/* Estado cargando */
+.auth-form.is-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.auth-error {
+  min-height: 1.2rem;
+  margin-top: 0.5rem;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+}
+
+.auth-hint {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: #9da4c6;
+}
+
+.auth-back {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.link-muted {
+  color: #9da4c6;
+  text-decoration: none;
+}
+
+.link-muted:hover {
+  text-decoration: underline;
+}
+
+/* Botones genéricos */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4b8fff, #3dd2ff);
+  color: #0a0e18;
+  box-shadow: 0 10px 24px rgba(61, 210, 255, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(61, 210, 255, 0.55);
+}
+
+.btn-secondary {
+  background: #252b40;
+  color: #f5f7ff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.55);
+}
+
+.btn-disabled {
+  background: #303549;
+  color: #7b819c;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* Header admin */
+.admin-header-card {
+  background: #151a2b;
+  border-radius: 18px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.admin-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: #8ea2ff;
+  margin: 0 0 0.25rem;
+}
+
+.admin-desc {
+  margin-top: 0.5rem;
+  color: #b3b9d8;
+  max-width: 40rem;
+  font-size: 0.95rem;
+}
+
+.admin-season-box {
+  background: radial-gradient(circle at top left, #3dd2ff 0, #4b8fff 55%, #151a2b 100%);
+  border-radius: 14px;
+  padding: 0.9rem 1.2rem;
+  min-width: 180px;
+  text-align: right;
+  color: #0a0e18;
+}
+
+.admin-season-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+.admin-season-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* Grid de tarjetas admin */
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.admin-card {
+  background: #151a2b;
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-card h3 {
+  margin: 0;
+}
+
+.admin-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #c1c7e2;
+}
+
+.admin-card-disabled {
+  opacity: 0.65;
+}
+
+.admin-note {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: #a0a6c2;
+}
+
+/* Zona usuario en header */
+.user-section {
+  margin-left: auto;
+  margin-right: 1rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-section .user-name {
+  font-weight: 600;
+}
+
+.user-section a {
+  color: #c1ccff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.user-section a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .auth-card {
+    padding: 1.5rem 1.4rem;
+  }
+  .admin-header-card {
+    padding: 1.4rem 1.2rem;
+  }
+  .admin-header-main {
+    align-items: flex-start;
+  }
+  .admin-season-box {
+    text-align: left;
+  }
+}
+.link-as-button {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: #c1ccff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-as-button:hover {
+  opacity: 0.85;
+}
+
+.auth-card-secondary {
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.auth-info {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #b3b9d8;
+}
+
+/* ─────────────────────────────
+   Badges para Bracket Type
+   (Doble Eliminación)
+   ───────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.badge-winner {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 1px 3px rgba(31, 191, 74, 0.3);
+}
+
+.badge-loser {
+  background-color: var(--secondary-color);
+  color: white;
+  box-shadow: 0 1px 3px rgba(26, 160, 58, 0.3);
+}
+
+.badge-normal {
+  background-color: var(--muted);
+  color: var(--text-dim);
+}
+
+/* ─────────────────────────────
+   Notificaciones en tiempo real
+   ───────────────────────────── */
+
+.admin-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  font-size: 0.95rem;
+  font-weight: 500;
+  max-width: 400px;
+  opacity: 0;
+  transform: translateX(100px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.admin-notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.admin-notification-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-left: 4px solid #047857;
+}
+
+.admin-notification-info {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border-left: 4px solid #1d4ed8;
+}
+
+.admin-notification-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border-left: 4px solid #b45309;
+}
+
+.admin-notification-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border-left: 4px solid #b91c1c;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+}
+
+/* Responsive para notificaciones */
+@media (max-width: 600px) {
+  .admin-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+}

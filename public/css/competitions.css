@@ -1,0 +1,586 @@
+/* Competitions Page Styles */
+
+.page-competitions {
+  background: var(--bg, #050812);
+  color: var(--text, #e8eef9);
+}
+
+.competitions-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Filtros */
+.competitions-filters {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.create-competition-section {
+  margin-left: auto;
+}
+
+.btn-create-competition {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent, #1fbf4a);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-create-competition:hover {
+  background: var(--accent-hover, #1aa03a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(31, 191, 74, 0.3);
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--bg-elevated, #101522);
+  color: var(--text, #e8eef9);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--accent, #1fbf4a);
+  box-shadow: 0 0 0 2px rgba(31, 191, 74, 0.15);
+}
+
+.search-box input::placeholder {
+  color: var(--muted, #9fb3c8);
+}
+
+.search-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.filters-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--bg-elevated, #101522);
+  color: var(--text, #e8eef9);
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.filter-select:hover {
+  border-color: var(--accent, #1fbf4a);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent, #1fbf4a);
+  box-shadow: 0 0 0 2px rgba(31, 191, 74, 0.15);
+}
+
+/* Lista de competiciones */
+.competitions-list-section {
+  margin-bottom: 2rem;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted, #9fb3c8);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+}
+
+.empty-state p {
+  color: var(--muted, #9fb3c8);
+  font-size: 1.1rem;
+}
+
+.competitions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Cards de competición */
+.competition-card {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.competition-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent, #1fbf4a);
+  box-shadow: 0 8px 24px rgba(31, 191, 74, 0.15);
+}
+
+.competition-card-header {
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle, #202735);
+}
+
+.competition-card-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--text, #e8eef9);
+}
+
+.competition-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.competition-card-body {
+  padding: 1rem 1.5rem;
+  flex: 1;
+}
+
+.competition-description {
+  margin: 0 0 1rem 0;
+  color: var(--muted, #9fb3c8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.competition-meta {
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle, #202735);
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.meta-label {
+  color: var(--muted, #9fb3c8);
+  font-weight: 500;
+}
+
+.meta-value {
+  color: var(--text, #e8eef9);
+}
+
+.competition-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-elevated, #101522);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--muted, #9fb3c8);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--accent, #1fbf4a);
+}
+
+.competition-card-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-subtle, #202735);
+  background: var(--bg-elevated, #101522);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.competition-card-footer .btn {
+  flex: 1;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-official {
+  background: var(--accent, #1fbf4a);
+  color: var(--bg, #050812);
+}
+
+.badge-unofficial {
+  background: var(--muted, #9fb3c8);
+  color: var(--bg, #050812);
+}
+
+.badge-active {
+  background: var(--accent, #1fbf4a);
+  color: var(--bg, #050812);
+}
+
+.badge-finished {
+  background: var(--muted, #9fb3c8);
+  color: var(--bg, #050812);
+}
+
+.badge-open {
+  background: #ffc107;
+  color: var(--bg, #050812);
+}
+
+.badge-draft {
+  background: var(--border-subtle, #202735);
+  color: var(--muted, #9fb3c8);
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-primary {
+  background: var(--accent, #1fbf4a);
+  color: var(--bg, #050812);
+}
+
+.btn-primary:hover {
+  background: #1aa83d;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--accent, #1fbf4a);
+  border: 1px solid var(--accent, #1fbf4a);
+}
+
+.btn-outline:hover {
+  background: var(--accent, #1fbf4a);
+  color: var(--bg, #050812);
+}
+
+.btn-disabled {
+  background: var(--border-subtle, #202735);
+  color: var(--muted, #9fb3c8);
+  cursor: not-allowed;
+  border: 1px solid var(--border-subtle, #202735);
+}
+
+.btn-disabled:hover {
+  transform: none;
+}
+
+/* Error message */
+.error-message {
+  background: rgba(220, 53, 69, 0.15);
+  color: #ff6b7a;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* Modal de inscripción */
+.enrollment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.enrollment-modal {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.enrollment-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle, #202735);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: var(--card, #151a22);
+  z-index: 10;
+}
+
+.enrollment-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text, #e8eef9);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--muted, #9fb3c8);
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-close-btn:hover {
+  color: var(--text, #e8eef9);
+}
+
+.enrollment-modal-body {
+  padding: 1.5rem;
+}
+
+.enrollment-modal-body p {
+  color: var(--muted, #9fb3c8);
+  margin-bottom: 1.5rem;
+}
+
+.clubs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.club-card {
+  background: var(--bg-elevated, #101522);
+  border: 2px solid var(--border-subtle, #202735);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.club-card:hover {
+  border-color: var(--accent, #1fbf4a);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(31, 191, 74, 0.2);
+}
+
+.club-card.selected {
+  border-color: var(--accent, #1fbf4a);
+  background: rgba(31, 191, 74, 0.1);
+}
+
+.club-card.unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.club-card.unavailable:hover {
+  transform: none;
+  border-color: var(--border-subtle, #202735);
+  box-shadow: none;
+}
+
+.club-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.club-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text, #e8eef9);
+  margin: 0;
+}
+
+.club-short-name {
+  font-size: 0.875rem;
+  color: var(--muted, #9fb3c8);
+  margin: 0.25rem 0 0 0;
+}
+
+.club-unavailable-badge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(220, 53, 69, 0.2);
+  color: #ff6b7a;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.enrollment-modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-subtle, #202735);
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  background: var(--bg-elevated, #101522);
+  position: sticky;
+  bottom: 0;
+}
+
+.enrollment-modal-footer .btn {
+  min-width: 120px;
+}
+
+.btn-secondary {
+  background: var(--bg-elevated, #101522);
+  color: var(--text, #e8eef9);
+  border: 1px solid var(--border-subtle, #202735);
+}
+
+.btn-secondary:hover {
+  background: var(--border-subtle, #202735);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .competitions-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .filters-group {
+    width: 100%;
+  }
+
+  .filter-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .competitions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .competition-card-footer {
+    flex-direction: column;
+  }
+
+  .competition-card-footer .btn {
+    width: 100%;
+  }
+
+  .enrollment-modal {
+    max-height: 95vh;
+  }
+
+  .clubs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .enrollment-modal-footer {
+    flex-direction: column;
+  }
+
+  .enrollment-modal-footer .btn {
+    width: 100%;
+  }
+}
+

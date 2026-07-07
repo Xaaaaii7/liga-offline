@@ -1,0 +1,901 @@
+/* ==========================
+   PÁGINA CLUBS (listado)
+   ========================== */
+.page-clubs .clubs-header,
+.page-managers .clubs-header{
+  margin-top:10px;
+  margin-bottom:14px;
+}
+.page-clubs .clubs-header h2,
+.page-managers .clubs-header h2{
+  margin:0 0 6px;
+}
+.page-clubs .clubs-sub,
+.page-managers .clubs-sub{
+  margin:0;
+  color:var(--muted);
+  font-size:.95rem;
+}
+
+/* Grid moderno tipo web de liga */
+.clubs-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:16px;
+}
+
+/* Card club */
+.club-card{
+  background:var(--bg-elevated);
+  border:1px solid var(--border-subtle);
+  border-radius:var(--r-lg);
+  padding:16px 12px 14px;
+  text-decoration:none;
+  color:inherit;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  box-shadow:var(--sh-sm);
+  transition:border-color .15s ease, background .15s ease;
+  position:relative;
+  overflow:hidden;
+}
+
+.club-card:hover{
+  background:var(--card);
+  border-color:var(--accent);
+}
+
+/* Escudo grande */
+.club-badge-wrap{
+  width:92px;
+  height:92px;
+  border-radius:var(--r-lg);
+  background:#ffffff;
+  display:grid;
+  place-items:center;
+  box-shadow:var(--sh-sm);
+}
+.club-badge{
+  width:72px;
+  height:72px;
+  object-fit:contain;
+}
+
+/* Nombre club */
+.club-name{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:1rem;
+  letter-spacing:-0.005em;
+  text-align:center;
+}
+
+/* CTA pequeñita */
+.club-cta{
+  font-size:.85rem;
+  color:var(--muted);
+  letter-spacing:.03em;
+}
+.club-cta-link{
+  cursor:pointer;
+}
+.club-cta-link:hover{
+  color:var(--accent);
+}
+
+/* Responsive */
+@media (max-width:720px){
+  .clubs-grid{
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;
+  }
+  .club-badge-wrap{
+    width:82px;height:82px;border-radius:18px;
+  }
+  .club-badge{
+    width:64px;height:64px;
+  }
+}
+/* ==========================
+   PÁGINA CLUB (template único)
+   ========================== */
+
+.page-club main{ margin-top:14px; }
+
+/* Banner superior */
+.club-banner{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:16px 18px;
+  border-radius:20px;
+  background:linear-gradient(135deg, rgba(31,191,74,0.14), rgba(16,21,34,1));
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:0 18px 40px rgba(0,0,0,.55);
+}
+
+.club-banner-logo{
+  width:86px;
+  height:86px;
+  border-radius:18px;
+  background:#fff;
+  padding:6px;
+  object-fit:contain;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+
+.club-banner-info h2{
+  margin:0;
+  font-size:1.7rem;
+  font-weight:900;
+}
+
+.club-description{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:.95rem;
+}
+
+/* Tabs club (reusa tu .tabs) */
+.club-tabs{ margin-top:14px; }
+
+/* Grid resumen */
+.club-grid{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:14px;
+  margin-top:10px;
+}
+
+/* Caja resumen */
+.club-box{
+  grid-column:span 6;
+  background:var(--bg-elevated);
+  border-radius:18px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow:0 10px 24px rgba(0,0,0,.45);
+}
+
+.club-box h3{
+  margin:0 0 8px;
+  font-size:1.05rem;
+  font-weight:800;
+}
+
+/* Partido (next / last) */
+.club-match{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  background:#0b1220;
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;
+  padding:8px 10px;
+  font-variant-numeric:tabular-nums;
+  flex-wrap:wrap;
+}
+
+.club-mini-logo{
+  width:26px;height:26px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:6px;
+  padding:2px;
+}
+
+.club-date{
+  width:100%;
+  text-align:center;
+  font-size:.85rem;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+/* Mini tabla clasificación */
+.club-mini-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.95rem;
+}
+
+.club-mini-table th,
+.club-mini-table td{
+  padding:8px 8px;
+  border-bottom:1px solid var(--border-subtle);
+  text-align:left;
+}
+
+.club-mini-table th{
+  font-size:.78rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--muted);
+}
+
+.club-mini-table tr.club-highlight{
+  background:rgba(31,191,74,0.12);
+  outline:2px solid var(--accent);
+}
+
+/* Formación */
+.club-formacion{
+  width:100%;
+  max-height:420px;
+  object-fit:contain;
+  border-radius:12px;
+  background:#0b1220;
+  border:1px dashed rgba(255,255,255,0.10);
+  padding:8px;
+}
+
+/* Top scorer */
+.club-player{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.club-player-photo{
+  width:76px;height:96px;
+  border-radius:12px;
+  object-fit:cover;
+  background:#111827;
+  flex:0 0 auto;
+}
+
+.club-player-info{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.club-player-info strong{
+  font-size:1.05rem;
+  font-weight:900;
+}
+.club-player-info span{
+  font-weight:800;
+}
+
+/* Valoración del mejor jugador (mismo estilo que estadisticas.html) */
+.club-rating-value{
+  color:var(--accent);
+  font-size:1.1rem;
+  font-weight:800;
+}
+
+/* Pills de stats del jugador (goles, tarjetas) */
+.club-player-stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-top:4px;
+}
+
+/* Responsive */
+@media (max-width:900px){
+  .club-box{ grid-column:span 12; }
+}
+
+@media (max-width:640px){
+  .club-banner{ padding:12px; }
+  .club-banner-logo{ width:72px;height:72px;border-radius:16px; }
+  .club-banner-info h2{ font-size:1.45rem; }
+}
+/* Stats en banner de club */
+.club-banner-stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px;
+}
+
+.club-stat{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 10px;
+  border-radius:var(--r-pill);
+  background:var(--card);
+  border:1px solid var(--border-subtle);
+  font-size:.85rem;
+}
+
+.club-stat .label{
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  font-weight:600;
+  font-size:.68rem;
+}
+
+.club-stat .value{
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Logros (achievements) del manager */
+.manager-achievements{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.manager-achievement-card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:var(--r-md);
+  background:var(--card);
+  border:1px solid var(--border-subtle);
+  transition:border-color 0.15s ease;
+}
+.manager-achievement-card:hover{
+  border-color:var(--accent);
+}
+.manager-achievement-icon{
+  font-size:1.8rem;
+  line-height:1;
+  flex-shrink:0;
+}
+.manager-achievement-body strong{
+  display:block;
+  font-size:.9rem;
+  line-height:1.2;
+}
+.manager-achievement-desc{
+  color:var(--muted);
+  font-size:.75rem;
+  margin-top:2px;
+}
+
+/* Contenedor general de la formación */
+.club-formation-wrapper {
+  width: 100%;
+  max-width: 420px;       /* se ve bien en móvil y en escritorio */
+  margin: 0 auto;
+}
+
+/* Campo con proporción vertical fija */
+.club-formation-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;   /* adapta a tu PNG */
+  overflow: hidden;
+}
+
+/* Fondo del campo */
+.club-formation-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* "Camiseta" del jugador */
+.club-formation-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  min-width: 56px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  cursor: default;
+  pointer-events: none;     /* en modo lectura, luego en editor lo activamos */
+}
+
+/* Cuando estemos en modo edición, se puede clicar */
+.club-formation-edit .club-formation-slot {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Meta y controles debajo del campo */
+.club-formation-meta {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.club-formation-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.club-formation-system {
+  font-weight: 600;
+}
+
+.club-formation-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.club-formation-actions button {
+  flex: 1;
+}
+
+.club-formation-hint {
+  font-size: 0.8rem;
+  color: var(--muted, #7c8da0);
+}
+/* ===== Formación (campo + editor) ===== */
+
+.club-formation-wrapper {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.club-formation-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+}
+
+.club-formation-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.club-formation-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  min-width: 56px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: center;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  cursor: default;
+  pointer-events: none; /* en modo lectura */
+}
+
+.club-formation-edit .club-formation-slot {
+  cursor: pointer;
+  pointer-events: auto; /* en modo edición podríamos usar click si queremos */
+}
+
+.club-formation-meta {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.club-formation-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.club-formation-system {
+  font-weight: 600;
+}
+
+.club-formation-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.club-formation-actions button {
+  flex: 1;
+}
+
+.club-formation-hint {
+  font-size: 0.8rem;
+  color: var(--muted, #7c8da0);
+}
+
+/* Editor debajo del campo */
+.club-formation-editor {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.club-formation-editor label {
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.club-formation-editor select {
+  width: 100%;
+}
+
+.club-formation-editor-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.club-formation-editor-group-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.club-formation-editor-slot {
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.club-formation-editor-slot span {
+  display: inline-block;
+  min-width: 60px;
+}
+
+/* ==========================
+   CLUB PALMARÉS
+   ========================== */
+.club-palmares-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.club-palmares-section {
+  background: var(--bg-elevated);
+  border-radius: 18px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.club-palmares-section h3 {
+  margin: 0 0 1.25rem;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--text-color);
+}
+
+.club-palmares-section h4 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-color);
+}
+
+.club-palmares-item {
+  margin-bottom: 1.5rem;
+}
+
+.club-palmares-item:last-child {
+  margin-bottom: 0;
+}
+
+.club-palmares-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.club-palmares-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(31, 191, 74, 0.1);
+  border: 1px solid rgba(31, 191, 74, 0.2);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.club-palmares-badge:hover {
+  background: rgba(31, 191, 74, 0.15);
+  border-color: rgba(31, 191, 74, 0.3);
+  transform: translateY(-2px);
+}
+
+.club-palmares-badge .badge-label {
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.club-palmares-badge .badge-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.club-palmares-title {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(31, 191, 74, 0.1));
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.club-palmares-title:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(31, 191, 74, 0.15));
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.club-palmares-title .badge-label {
+  color: #fbbf24;
+}
+
+@media (max-width: 640px) {
+  .club-palmares-section {
+    padding: 1rem;
+  }
+
+  .club-palmares-section h3 {
+    font-size: 1.15rem;
+  }
+
+  .club-palmares-section h4 {
+    font-size: 0.95rem;
+  }
+
+  .club-palmares-badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .club-palmares-list {
+    gap: 0.5rem;
+  }
+}
+
+/* ===================================================================
+   .club-resumen — layout reorganizado del tab Resumen (bloque 6b)
+   Feature row 3-up (Próximo · Último · Forma) +
+   body con main (Mini-clasif) y aside (Goleador + Mejor jugador).
+   =================================================================== */
+
+.club-resumen{
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4, 16px);
+  margin-top: var(--s-2, 8px);
+}
+
+.club-resumen-feature{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-4, 16px);
+}
+
+.club-resumen-body{
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--s-4, 16px);
+  align-items: start;
+}
+
+.club-resumen-aside{
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4, 16px);
+}
+
+/* Reset del span:6 heredado de .club-box dentro de los nuevos contenedores */
+.club-resumen-feature > .club-box,
+.club-resumen-main > .club-box,
+.club-resumen-aside > .club-box{
+  grid-column: auto;
+}
+
+@media (max-width: 900px){
+  .club-resumen-feature{ grid-template-columns: 1fr; }
+  .club-resumen-body{ grid-template-columns: 1fr; }
+}
+
+/* ===================================================================
+   .club-stats-* — tab Estadísticas (bloque 6d)
+   KPI strip arriba + grid de cards con barra de posición relativa
+   =================================================================== */
+
+.club-stats-wrap{
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4, 16px);
+  margin-top: var(--s-2, 8px);
+}
+
+/* KPI strip top (4 tiles) */
+.club-stats-hero{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-3, 12px);
+}
+
+.club-stats-hero-tile{
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+
+.club-stats-hero-tile__label{
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+}
+
+.club-stats-hero-tile__value{
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+.club-stats-hero-tile__rank{
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(31,191,74,.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+.club-stats-hero-tile__rank--muted{
+  color: var(--muted);
+  background: rgba(255,255,255,.05);
+}
+
+/* Cards grid */
+.club-stats-cards{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3, 12px);
+}
+
+.club-stats-card{
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+
+.club-stats-card__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.club-stats-card__title{
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.club-stats-card__rank{
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(31,191,74,.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.club-stats-card__rank--muted{
+  color: var(--muted);
+  background: rgba(255,255,255,.05);
+}
+
+.club-stats-card__main{
+  font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+/* Barra de posición relativa: 1º (izquierda, accent) → Nº (derecha) */
+.club-stats-card__bar{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.club-stats-card__bar-track{
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    rgba(31,191,74,.55) 0%,
+    rgba(31,191,74,.18) 35%,
+    rgba(255,255,255,.08) 70%,
+    rgba(239,68,68,.45) 100%);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.club-stats-card__bar-dot{
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0,0,0,.45);
+}
+
+.club-stats-card__bar-meta{
+  display: flex;
+  justify-content: space-between;
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+
+/* Detail kv list dentro de la card */
+.club-stats-card__detail{
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.club-stats-card__detail li{
+  display: flex;
+  justify-content: space-between;
+  font-size: .85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.club-stats-card__detail li > span:last-child{
+  color: var(--text);
+  font-weight: 700;
+}
+
+@media (max-width: 900px){
+  .club-stats-hero{ grid-template-columns: repeat(2, 1fr); }
+  .club-stats-cards{ grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px){
+  .club-stats-hero{ grid-template-columns: 1fr 1fr; gap: 8px; }
+  .club-stats-hero-tile{ padding: 10px 12px; }
+  .club-stats-hero-tile__value{ font-size: 1.3rem; }
+}

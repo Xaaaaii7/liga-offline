@@ -1,0 +1,424 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+
+:root{
+  /* Paleta (los nombres viejos se mantienen para no romper hojas existentes) */
+  --bg:#0b0f1a;
+  --bg-elevated:#131826;
+  --card:#1a2030;
+  --border-subtle:#242a3a;
+  --text:#e8eef9;
+  --muted:#8b95a7;
+  --accent:#22c55e;
+  --accent-soft:rgba(34,197,94,0.12);
+
+  /* Tokens nuevos — usar en código futuro */
+  --c-bg:var(--bg);
+  --c-surface:var(--bg-elevated);
+  --c-surface-2:var(--card);
+  --c-border:var(--border-subtle);
+  --c-border-strong:#2d3548;
+  --c-text:var(--text);
+  --c-text-muted:var(--muted);
+  --c-accent:var(--accent);
+  --c-accent-soft:var(--accent-soft);
+  --c-warning:#f59e0b;
+  --c-danger:#ef4444;
+
+  /* Radios coherentes */
+  --r-sm:6px;
+  --r-md:10px;
+  --r-lg:14px;
+  --r-pill:999px;
+
+  /* Sombras más sutiles */
+  --sh-sm:0 1px 2px rgba(0,0,0,0.2);
+  --sh-md:0 4px 12px rgba(0,0,0,0.25);
+  --sh-lg:0 10px 28px rgba(0,0,0,0.35);
+
+  /* Tipografía */
+  --font-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;
+  --font-display:"Manrope",var(--font-sans);
+
+  /* === Tokens nuevos (sprint UX 1) — añadir solo, no romper viejos === */
+
+  /* Spacing scale (4px base). Uso: padding:var(--s-3) */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px;
+  --s-5:20px; --s-6:24px; --s-8:32px; --s-10:40px; --s-12:48px;
+
+  /* Type scale */
+  --fs-xs:.78rem; --fs-sm:.88rem; --fs-base:1rem;
+  --fs-md:1.12rem; --fs-lg:1.35rem; --fs-xl:1.75rem;
+  --fs-2xl:clamp(1.9rem,3vw,2.5rem);
+  --fs-3xl:clamp(2.4rem,5vw,3.5rem);
+
+  /* Motion */
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --dur-1:120ms; --dur-2:200ms; --dur-3:320ms;
+
+  /* Sombras y radios extra */
+  --r-xl:20px;
+  --sh-glow:0 0 0 3px var(--accent-soft);
+
+  /* Color contextual: zonas de playoff (Voll Damm system) */
+  --c-zone-voll:#f59e0b;
+  --c-zone-free:#3b82f6;
+  --c-zone-estrella:#6b7280;
+
+  /* Estado live */
+  --c-live:#ef4444;
+  --c-live-soft:rgba(239,68,68,0.14);
+
+  /* Offset para elementos sticky bajo el header (coordina con live-strip si activa) */
+  --sticky-offset:80px;
+}
+
+/* Honra reduced-motion globalmente */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    transition-duration:0.01ms !important;
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    scroll-behavior:auto !important;
+  }
+}
+
+/* Focus-visible consistente para teclado / a11y */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  border-radius:var(--r-sm);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-sans);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Jerarquía de títulos global */
+h1,h2,h3{
+  margin:0;
+  font-family:var(--font-display);
+  letter-spacing:-0.01em;
+}
+h1{ font-size:1.9rem; font-weight:800; }
+h2{ font-size:1.45rem; font-weight:700; }
+h3{ font-size:1.15rem; font-weight:700; }
+
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:20px 16px 32px;
+}
+
+/* HEADER tipo cabecera de competición */
+.site-header,
+.site-footer{
+  background:rgba(5,8,18,0.95);
+  border-bottom:1px solid var(--border-subtle);
+}
+
+.site-footer{
+  border-top:1px solid var(--border-subtle);
+  border-bottom:none;
+  padding:16px;
+  text-align:center;
+  color:var(--muted);
+  font-size:.9rem;
+}
+
+.site-header{
+  padding:12px 16px;
+  display:flex;
+  gap:14px;
+  align-items:center;
+  position:sticky;
+  top:0;
+  z-index:20;
+  backdrop-filter:blur(12px);
+}
+
+/* Logo limpio, sin cajita translúcida */
+.logo{
+  width:44px;
+  height:44px;
+  border-radius:var(--r-md);
+  padding:0;
+  object-fit:contain;
+}
+
+/* Título página en el header */
+.site-header h1{
+  font-family:var(--font-display);
+  font-size:1.2rem;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  text-transform:none;
+}
+
+/* NAV */
+#main-nav{
+  margin-left:auto;
+  display:flex;
+  gap:2px;
+  flex-wrap:wrap;
+}
+
+#main-nav a{
+  color:var(--text);
+  text-decoration:none;
+  margin:0 2px;
+  padding:8px 14px;
+  border-radius:var(--r-md);
+  font-size:.88rem;
+  font-weight:500;
+  text-transform:none;
+  letter-spacing:normal;
+  border:1px solid transparent;
+  transition:background 0.15s ease, color 0.15s ease;
+}
+
+#main-nav a:hover{
+  background:var(--bg-elevated);
+}
+
+#main-nav a.active{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-weight:600;
+}
+
+/* Dropdown de navegación */
+.nav-dropdown{
+  position:relative;
+  display:inline-block;
+}
+
+.nav-dropdown-toggle{
+  color:var(--text);
+  text-decoration:none;
+  margin:0 2px;
+  padding:8px 14px;
+  border-radius:var(--r-md);
+  font-size:.88rem;
+  font-weight:500;
+  text-transform:none;
+  letter-spacing:normal;
+  border:1px solid transparent;
+  background:transparent;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-family:inherit;
+  transition:background 0.15s ease, color 0.15s ease;
+}
+
+.nav-dropdown-toggle:hover{
+  background:var(--bg-elevated);
+}
+
+.nav-dropdown.open .nav-dropdown-toggle{
+  background:var(--bg-elevated);
+  color:var(--accent);
+}
+
+.nav-dropdown-arrow{
+  font-size:0.7rem;
+  transition:transform 0.2s ease;
+  display:inline-block;
+}
+
+.nav-dropdown.open .nav-dropdown-arrow{
+  transform:rotate(180deg);
+}
+
+.nav-dropdown-menu{
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  min-width:160px;
+  background:var(--card);
+  border:1px solid var(--border-subtle);
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(-8px);
+  transition:all 0.2s ease;
+  z-index:1000;
+  padding:8px 0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.nav-dropdown.open .nav-dropdown-menu{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0);
+}
+
+.nav-submenu-item{
+  color:var(--text);
+  text-decoration:none;
+  padding:10px 16px;
+  font-size:.88rem;
+  font-weight:500;
+  text-transform:none;
+  letter-spacing:normal;
+  border-radius:0;
+  margin:0;
+  display:block;
+  transition:background 0.15s ease;
+  border:none;
+}
+
+.nav-submenu-item:hover{
+  background:var(--card);
+}
+
+.nav-submenu-item.active{
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-weight:600;
+}
+
+/* Botón hamburguesa */
+.menu-toggle{
+  display:none;
+  margin-left:auto;
+  background:transparent;
+  border:0;
+  cursor:pointer;
+  width:40px;
+  height:40px;
+  border-radius:8px;
+}
+.menu-toggle span{
+  display:block;
+  height:2px;
+  background:var(--text);
+  margin:7px 6px;
+}
+/* === Tarjetas de reglas === */
+
+.rules {
+  display: grid;
+  gap: 2rem;
+  margin-block: 2rem;
+}
+
+/* En pantallas grandes, dos columnas si hay ancho suficiente */
+@media (min-width: 900px) {
+  .rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.rule-card {
+  background: #0b1724;
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Que en móviles no se peguen tanto a los lados si tu .container es muy ancho */
+#reglas .rules .rule-card {
+  margin-inline: auto;
+}
+
+/* Cabecera de tarjeta: icono + título */
+.rule-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.rule-card-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.rule-icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Listas dentro de las tarjetas */
+.rule-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rule-card li {
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+/* Sublista dentro de "Resolución si el partido no se juega" */
+.rule-card li ul {
+  margin-top: 0.35rem;
+}
+
+/* Colores ligeros distintos por tipo (opcional) */
+.rule-general {
+  border-top: 3px solid #4fa3ff;
+}
+
+.rule-points {
+  border-top: 3px solid #ffd447;
+}
+
+.rule-fairplay {
+  border-top: 3px solid #5ed18a;
+}
+
+.rule-scheduling {
+  border-top: 3px solid #ff7aa2;
+}
+
+/* En pantallas pequeñas, que ocupen siempre una columna */
+@media (max-width: 899px) {
+  .rules {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Estilo unificado para links inline en texto (jugador, manager, club, etc.).
+   Usar `class="text-link"` o el helper `textLink()` de utils.js.
+   No aplicar a cards-completos-link, botones ni nav: solo a links inline en texto. */
+.text-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(34, 197, 94, 0.45);
+  transition: color 0.15s ease, border-bottom-color 0.15s ease;
+}
+.text-link:hover,
+.text-link:focus {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  border-bottom-style: solid;
+}
+

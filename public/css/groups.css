@@ -1,0 +1,122 @@
+/* Estilos para tablas de grupos */
+
+.groups-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.group-table-container {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.group-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid #0066cc;
+}
+
+.group-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.group-table thead {
+  background: #f8f9fa;
+}
+
+.group-table th {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #ddd;
+}
+
+.group-table th:first-child {
+  text-align: left;
+  padding-left: 1rem;
+}
+
+.group-table th:nth-child(2) {
+  text-align: left;
+  padding-left: 0.5rem;
+}
+
+.group-table tbody tr {
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
+}
+
+.group-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.group-qualified {
+  background: #e7f5e7 !important;
+  border-left: 4px solid #28a745;
+}
+
+.group-qualified:hover {
+  background: #d4edda !important;
+}
+
+.group-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+
+.group-table td:first-child {
+  text-align: left;
+  padding-left: 1rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.group-table td:nth-child(2) {
+  text-align: left;
+  padding-left: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.group-table td:last-child {
+  font-weight: 700;
+  color: #0066cc;
+}
+
+.qualified-badge {
+  display: inline-block;
+  background: #28a745;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .groups-container {
+    grid-template-columns: 1fr;
+  }
+
+  .group-table {
+    font-size: 0.8rem;
+  }
+
+  .group-table th,
+  .group-table td {
+    padding: 0.5rem 0.25rem;
+  }
+}
+

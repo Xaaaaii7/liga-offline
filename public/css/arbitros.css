@@ -1,0 +1,445 @@
+/* Página pública de árbitros: listado + ficha individual estilo jugador.html */
+
+/* ─────────────────────────────────────── Listado ─────────────────────────── */
+
+.arbitros-header {
+  margin-bottom: 1.5rem;
+}
+.arbitros-header h2 {
+  margin: 0 0 0.5rem;
+}
+.arbitros-sub {
+  color: var(--muted);
+  max-width: 720px;
+  margin: 0;
+}
+
+.arbitros-tier-section {
+  margin-top: 2rem;
+}
+.arbitros-tier-title {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.arbitros-tier-voll {
+  background: #fde2e2;
+  color: #8a1f1f;
+}
+.arbitros-tier-estrella {
+  background: #e2e8fd;
+  color: #1f3a8a;
+}
+
+.arbitros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.ref-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.ref-public-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  height: 100%;
+}
+.ref-card-link:hover .ref-public-card {
+  transform: translateY(-2px);
+  border-color: var(--accent, #4b8fff);
+}
+.ref-public-photo {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ref-public-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ref-public-photo-placeholder {
+  font-size: 2.4rem;
+  opacity: 0.5;
+}
+.ref-public-name {
+  margin: 0;
+  font-size: 1rem;
+}
+.ref-card-nick,
+.ref-public-card .ref-card-nick {
+  margin-top: 4px;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.ref-public-meta {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.ref-public-archetype {
+  margin-top: 8px;
+}
+.ref-public-archetype .ref-card-archetype {
+  display: inline-block;
+  background: var(--bg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: var(--text-default);
+}
+.ref-public-stat {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ref-public-stat strong {
+  display: block;
+  font-size: 1.4rem;
+  color: var(--text-default);
+}
+
+/* ─────────────────────────────────── Tier pill en hero ────────────────── */
+
+.ref-tier-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ref-tier-voll {
+  background: #fde2e2;
+  color: #8a1f1f;
+}
+.ref-tier-estrella {
+  background: #e2e8fd;
+  color: #1f3a8a;
+}
+
+/* Tinta sutil del hero del árbitro (mismo patrón que --player y --manager) */
+.page-hero--arbitro {
+  background: linear-gradient(135deg, rgba(99,102,241,0.06), var(--bg-elevated) 60%);
+}
+
+/* ─────────────────────────────────── Tab Resumen ─────────────────────── */
+
+.arb-empty {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.arb-empty p { margin: 0.4rem 0; }
+
+.arb-resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.arb-resumen-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+}
+.arb-resumen-card--wide {
+  grid-column: 1 / -1;
+}
+.arb-resumen-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.arb-resumen-empty,
+.arb-resumen-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.arb-resumen-note {
+  margin-top: 8px;
+  font-style: italic;
+}
+.arb-resumen-bar {
+  display: flex;
+  height: 22px;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--bg-default);
+}
+.arb-bar-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  transition: width 0.3s ease;
+}
+.arb-bar-home, i.arb-bar-home { background: #22c55e; }
+.arb-bar-draw, i.arb-bar-draw { background: #9ca3af; }
+.arb-bar-away, i.arb-bar-away { background: #ef4444; }
+.arb-resumen-legend {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.arb-resumen-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.arb-resumen-legend strong {
+  color: var(--text-default);
+  margin-left: 4px;
+}
+.arb-stat-row {
+  display: flex;
+  justify-content: space-around;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.arb-stat-row:last-child { margin-bottom: 0; }
+.arb-stat-row > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.arb-stat-row strong {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.arb-stat-row span {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─────────────────────────────────── Breakdowns ──────────────────────── */
+
+.arb-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.arb-bd-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+}
+.arb-bd-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.arb-bd-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.arb-bd-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-default);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.arb-bd-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arb-bd-crest {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.arb-bd-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.arb-bd-value small {
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* ─────────────────────────────────── Tab Trayectoria ─────────────────── */
+
+.arb-season-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.arb-season-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.arb-season-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.arb-season-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.arb-comp-block {
+  border-left: 3px solid var(--border-subtle);
+  padding: 0.5rem 0 0.5rem 0.85rem;
+  margin-bottom: 0.6rem;
+}
+.arb-comp-block:last-child { margin-bottom: 0; }
+
+.arb-comp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 0.4rem;
+}
+.arb-comp-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  text-decoration: none;
+}
+a.arb-comp-label:hover {
+  color: var(--text-default);
+}
+.arb-comp-count {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.arb-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arb-match-row {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-default);
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.88rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
+}
+a.arb-match-row:hover {
+  border-color: var(--accent, #1fbf4a);
+}
+.arb-match-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.arb-match-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.arb-match-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.arb-match-team:first-child {
+  justify-content: flex-end;
+}
+.arb-match-team img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.arb-match-score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .arb-match-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .arb-match-meta {
+    font-size: 0.72rem;
+  }
+}

@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Club</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/fanbase.css" />
+  <link rel="stylesheet" href="css/plantilla-roles.css" />
+</head>
+
+<body class="page-club">
+
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1 id="club-title">Club</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container" id="club-root">
+
+    <!-- Hero unificado (bloque 6) -->
+    <section id="club-hero" class="page-hero page-hero--club">
+      <div class="page-hero__main">
+        <img id="club-hero-crest" class="page-hero__crest" src="" alt="">
+        <div class="page-hero__identity">
+          <div id="club-hero-eyebrow" class="page-hero__eyebrow"></div>
+          <h2 id="club-name" class="page-hero__title"></h2>
+          <div id="club-hero-meta" class="page-hero__meta-row"></div>
+        </div>
+        <div id="club-hero-kpis" class="page-hero__kpis"></div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs club-tabs">
+      <button data-tab="resumen" class="active">Resumen</button>
+      <button data-tab="plantilla">Plantilla</button>
+      <button data-tab="formacion">Formación</button>
+      <button data-tab="stats">Estadísticas</button>
+      <button data-tab="palmares">Palmarés</button>
+    </div>
+
+    <!-- Paneles -->
+    <section id="tab-resumen" class="tab-panel active"></section>
+    <section id="tab-plantilla" class="tab-panel"></section>
+
+    <!-- 🔥 Nueva pestaña Formación -->
+    <section id="tab-formacion" class="tab-panel"></section>
+
+    <section id="tab-stats" class="tab-panel"></section>
+
+    <section id="tab-palmares" class="tab-panel"></section>
+
+  </main>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+
+  <script>
+    // Lee el equipo desde ?team=Atalanta
+    const params = new URLSearchParams(window.location.search);
+    window.CLUB_NAME = params.get("team") || null;
+  </script>
+
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/club.js"></script>
+  <script type="module" src="js/liga/club_formacion.js"></script>
+  <script type="module" src="js/liga/club-palmares.js"></script>
+</body>
+
+</html>

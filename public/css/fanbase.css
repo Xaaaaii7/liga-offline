@@ -1,0 +1,279 @@
+/* Sistema de afición — pills, barras, badges. Prefijo .fb-* para evitar
+   colisiones con clases genéricas de components.css. */
+
+/* ───────── Mood pills (bucket en color) ───────── */
+.fb-mood-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 6px;
+}
+.fb-mood-euphoric    { background: #d1fae5; color: #064e3b; }
+.fb-mood-happy       { background: #ecfdf5; color: #047857; }
+.fb-mood-hopeful     { background: #e0f2fe; color: #075985; }
+.fb-mood-neutral     { background: #e5e7eb; color: #374151; }
+.fb-mood-disappointed{ background: #fef3c7; color: #92400e; }
+.fb-mood-angry       { background: #fee2e2; color: #991b1b; }
+.fb-mood-depressed   { background: #1f1f23; color: #f9fafb; }
+
+/* ───────── Sentiment badges (sentiment hacia manager o jugador) ───────── */
+.fb-sentiment-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.fb-sentiment-love     { background: #d1fae5; color: #064e3b; }
+.fb-sentiment-fond     { background: #ecfdf5; color: #047857; }
+.fb-sentiment-positive { background: #e0f2fe; color: #075985; }
+.fb-sentiment-neutral  { background: #e5e7eb; color: #374151; }
+.fb-sentiment-negative { background: #fef3c7; color: #92400e; }
+.fb-sentiment-hostile  { background: #fee2e2; color: #991b1b; }
+.fb-sentiment-pariah   { background: #1f1f23; color: #f9fafb; }
+
+/* ───────── Mood bar (barra horizontal del mood) ───────── */
+.fb-mood-bar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: var(--bg-default, #1f1f23);
+  border: 1px solid var(--border-subtle, #2a2a30);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.fb-mood-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 35%, #fbbf24 50%, #84cc16 65%, #22c55e 100%);
+  transition: width 0.3s ease;
+}
+.fb-mood-bar-marker {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* ───────── Bloque público de afición ───────── */
+.fb-block {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.fb-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fb-block-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.fb-block-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.fb-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.fb-kpi {
+  background: var(--bg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.fb-kpi-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.fb-kpi-label {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.fb-kpi-sub {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.fb-rival-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 0.85rem;
+}
+.fb-rival-row .fb-rival-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fb-rival-row .fb-sentiment-pill {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+}
+
+.fb-factions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.fb-faction {
+  background: var(--bg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.fb-faction-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.fb-faction-name small {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ───────── Manager sentiment list (manager.html) ───────── */
+.fb-club-sentiment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fb-club-sentiment-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+.fb-club-sentiment-crest {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.fb-club-sentiment-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.fb-club-sentiment-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ───────── Events feed ───────── */
+.fb-events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fb-event {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--bg-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+.fb-event-date {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.fb-event-headline {
+  min-width: 0;
+}
+.fb-event-delta {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fb-event-delta-pos { color: #22c55e; }
+.fb-event-delta-neg { color: #ef4444; }
+.fb-event-delta-zero { color: var(--muted); }
+
+/* ───────── Flags emergentes ───────── */
+.fb-flags-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fb-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+}
+.fb-flag a { text-decoration: underline; }
+.fb-flag-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+.fb-flag-warn {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+.fb-flag-muted {
+  background: #e5e7eb;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+/* ───────── Hero pill (club.html per-competition) ───────── */
+.fb-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.fb-hero-pill-icon { font-size: 0.85rem; }

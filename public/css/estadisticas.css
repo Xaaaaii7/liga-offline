@@ -1,0 +1,235 @@
+/* ==========================
+   PÁGINA ESTADÍSTICAS
+   ========================== */
+
+.page-estadisticas main {
+  margin-top: 18px;
+}
+
+/* Tabs específicas de estadísticas */
+.tabs-estadisticas {
+  margin-bottom: 16px;
+}
+
+.tabs-estadisticas button {
+  font-size: 0.9rem;
+  padding: 10px 16px;
+}
+
+/* Paneles tipo tarjeta */
+.page-estadisticas .table-wrap {
+  background: var(--bg-elevated);
+  border-radius: 20px;
+  padding: 14px 12px 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 14px 36px rgba(0,0,0,.5);
+  margin-top: 0;
+}
+
+/* Título dentro del panel */
+.page-estadisticas .table-wrap h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+/* Tablas más compactas en esta página */
+.page-estadisticas table {
+  font-size: 0.92rem;
+  width: 100%;
+}
+
+.page-estadisticas th,
+.page-estadisticas td {
+  padding: 10px 12px;
+}
+
+/* Cabecera con pequeño degradado */
+.page-estadisticas thead tr {
+  background: linear-gradient(to right,rgba(31,191,74,0.16),rgba(15,23,42,1));
+}
+
+.page-estadisticas thead th {
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: .75rem;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+/* Zebra striping */
+.page-estadisticas tbody tr:nth-child(odd) {
+  background: #050816;
+}
+
+.page-estadisticas tbody tr:nth-child(even) {
+  background: #020513;
+}
+
+.page-estadisticas tbody tr:hover {
+  background: #0b1120;
+  cursor: pointer;
+}
+
+/* Celdas especiales */
+.page-estadisticas .pos-cell {
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+}
+
+.page-estadisticas .player-cell {
+  min-width: 180px;
+}
+
+.page-estadisticas .player-cell strong {
+  font-size: 1rem;
+  color: var(--text);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.page-estadisticas .player-cell .muted {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.page-estadisticas .team-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.page-estadisticas .team-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: #fff;
+  padding: 2px;
+}
+
+.page-estadisticas .rating-cell {
+  text-align: center;
+}
+
+.page-estadisticas .rating-cell strong {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+/* Alineación de columnas */
+.page-estadisticas table td:nth-child(4),  /* PJ */
+.page-estadisticas table td:nth-child(5),  /* Media */
+.page-estadisticas table td:nth-child(6),  /* Min */
+.page-estadisticas table td:nth-child(7) { /* Max */
+  text-align: center;
+}
+
+.page-estadisticas table th:nth-child(4),
+.page-estadisticas table th:nth-child(5),
+.page-estadisticas table th:nth-child(6),
+.page-estadisticas table th:nth-child(7) {
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-estadisticas .table-wrap {
+    padding: 10px 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-estadisticas table {
+    font-size: 0.85rem;
+    table-layout: auto;
+  }
+
+  .page-estadisticas th,
+  .page-estadisticas td {
+    padding: 7px 5px;
+  }
+
+  .page-estadisticas thead th {
+    font-size: .72rem;
+    padding: 7px 4px;
+  }
+
+  .page-estadisticas .player-cell {
+    min-width: 130px;
+    max-width: 160px;
+  }
+
+  .page-estadisticas .team-cell {
+    min-width: 110px;
+    max-width: 140px;
+  }
+
+  .page-estadisticas .team-badge {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tabs-estadisticas button {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+  
+  /* Columnas numéricas centradas y más compactas */
+  .page-estadisticas table th:nth-child(n+4),
+  .page-estadisticas table td:nth-child(n+4){
+    text-align: center;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Optimización adicional para móviles pequeños */
+  .page-estadisticas .table-wrap {
+    padding: 8px 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-estadisticas table {
+    font-size: 0.82rem;
+    table-layout: auto;
+    min-width: auto;
+  }
+
+  .page-estadisticas th,
+  .page-estadisticas td {
+    padding: 6px 4px;
+  }
+
+  .page-estadisticas thead th {
+    font-size: .68rem;
+    padding: 6px 3px;
+  }
+
+  .page-estadisticas .player-cell {
+    min-width: 120px;
+    max-width: 150px;
+  }
+
+  .page-estadisticas .team-cell {
+    min-width: 100px;
+    max-width: 130px;
+  }
+
+  .page-estadisticas .team-badge {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Columnas numéricas más compactas */
+  .page-estadisticas table th:nth-child(n+4),
+  .page-estadisticas table td:nth-child(n+4){
+    text-align: center;
+    min-width: auto;
+    padding: 6px 3px;
+  }
+}
+

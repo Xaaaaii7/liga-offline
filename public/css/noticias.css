@@ -1,0 +1,869 @@
+/* ================================
+   PÁGINA NOTICIAS – LOOK “LIGA”
+   ================================ */
+
+/* Un poco más de espacio entre bloques */
+.page-noticias main section{
+  margin-bottom:28px;
+}
+
+/* Subtítulo “Histórico” */
+.page-noticias h2{
+  margin-bottom:10px;
+}
+
+/* ==== Hero (destacadas) ==== */
+.hero-carousel{
+  position:relative;
+  overflow:hidden;
+  width:100%;
+  aspect-ratio:16 / 9;
+  max-height:60vh;
+  border-radius:20px;
+  background:#020410;
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+
+/* Borde “marca de torneo” */
+.hero-carousel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:20px;
+  padding:1px;
+  background:linear-gradient(135deg,rgba(31,191,74,.8),rgba(49,130,206,.5));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+          mask-composite:exclude;
+  pointer-events:none;
+}
+
+.hero-track{
+  display:flex;
+  height:100%;
+  transition:transform .5s ease;
+}
+
+.hero-slide{
+  min-width:100%;
+  height:100%;
+  position:relative;
+}
+
+.hero-slide img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* Degradado inferior estilo TV */
+.hero-caption{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:14px 16px 18px;
+  background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.0));
+  color:#fff;
+}
+.hero-caption strong{
+  font-size:1.25rem;
+  text-shadow:0 2px 10px rgba(0,0,0,.9);
+}
+.hero-caption small{
+  display:inline-block;
+  margin-top:4px;
+  font-size:.85rem;
+  opacity:.9;
+}
+
+/* Botones anterior/siguiente */
+.hero-nav{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  border:0;
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  width:40px;
+  height:40px;
+  border-radius:999px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.6rem;
+  transition:background .15s ease, transform .15s ease;
+}
+.hero-nav.prev{left:16px}
+.hero-nav.next{right:16px}
+.hero-nav:hover{
+  background:rgba(0,0,0,.8);
+  transform:translateY(-50%) scale(1.05);
+}
+
+/* Dots del carrusel */
+.hero-dots{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:10px;
+  display:flex;
+  gap:6px;
+  justify-content:center;
+}
+.hero-dots button{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  border:0;
+  background:rgba(255,255,255,.5);
+  cursor:pointer;
+}
+.hero-dots button.active{
+  background:#fff;
+}
+
+/* ==== Histórico noticias – "portada de periódico" ==== */
+/* El contenedor ahora apila bloques (portada + lista compacta), no cards. */
+.news-grid{
+  display:flex;
+  flex-direction:column;
+  gap:30px;
+}
+
+.news-card{
+  background:var(--bg-elevated);
+  border-radius:18px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  border:1px solid rgba(255,255,255,0.04);
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.news-card img{
+  width:100%;
+  aspect-ratio:16 / 9;
+  object-fit:cover;
+  object-position:center;
+  display:block;
+  background:#0d1a26;
+}
+
+/* Contenido de la card */
+.news-card .content{
+  padding:12px 14px 14px;
+}
+
+/* Card clickable sin subrayado azul */
+.news-card a,
+.news-open{
+  color:inherit;
+  text-decoration:none;
+  display:block;
+}
+.news-card a:hover,
+.news-open:hover{
+  text-decoration:none;
+}
+
+/* Hover estilo tarjeta de portada */
+.news-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 18px 40px rgba(0,0,0,.55);
+  border-color:var(--accent-soft);
+}
+
+/* Título grande de noticia */
+.news-title{
+  margin:6px 0 4px;
+  font-size:1.15rem;
+  line-height:1.25;
+  font-weight:800;
+}
+
+/* Resumen en cursiva */
+.news-resumen{
+  margin:0 0 6px;
+  font-style:italic;
+  color:#c9d5e1;
+}
+
+/* Fecha / meta */
+.news-fecha{
+  margin:0;
+  color:var(--muted);
+  font-size:.85rem;
+}
+
+/* =====================================================
+   ADMIN: Botón flotante y modal de creación
+   ===================================================== */
+
+/* Botón flotante crear */
+.btn-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  z-index: 100;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+.btn-fab:active {
+  transform: scale(0.95);
+}
+
+/* Modal grande para editor */
+.modal-large {
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Form groups */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 59, 130, 246), 0.2);
+}
+
+.form-group input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+/* Preview imagen */
+#news-img-preview {
+  margin-top: 0.5rem;
+}
+
+#news-img-preview img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+}
+
+/* Actions */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Error message */
+.error-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fee;
+  color: #c00;
+  border-radius: 4px;
+  border-left: 3px solid #c00;
+  font-size: 0.9rem;
+  display: none;
+}
+
+.error-message:not(:empty) {
+  display: block;
+}
+
+/* Loading state */
+.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.is-loading .btn-primary::after {
+  content: '...';
+  animation: dots 1s infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+/* Editor simple */
+.editor-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border, #ddd);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.editor-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border, #ccc);
+  background: var(--bg, white);
+  color: var(--text, #333);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 32px;
+}
+
+.editor-btn:hover {
+  background: var(--bg-tertiary, #e8e8e8);
+}
+
+.editor-content {
+  min-height: 200px;
+  padding: 12px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 0 0 4px 4px;
+  background: var(--bg, white);
+  color: var(--text, #333);
+  outline: none;
+  overflow-y: auto;
+  max-height: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+.editor-content:focus {
+  border-color: var(--accent, #007bff);
+}
+
+.editor-content p {
+  margin: 0.5rem 0;
+}
+
+.editor-content ul, .editor-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.editor-content a {
+  color: var(--accent, #007bff);
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-large {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-fab {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.75rem;
+  }
+}
+
+/* =====================================================
+   FIRMA + BADGE — Bloques B y C (sistema news-writer)
+   ===================================================== */
+
+.news-card-header{
+  margin:8px 0 4px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.news-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  color:var(--text, #e8eef5);
+  font-size:.75rem;
+  font-weight:600;
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+
+.news-card-meta{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-top:6px;
+  flex-wrap:wrap;
+  font-size:.82rem;
+  color:var(--muted);
+}
+
+.news-author{
+  color:var(--muted);
+  font-size:.82rem;
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.news-author strong{
+  color:var(--text, #e8eef5);
+  font-weight:700;
+}
+.news-author em{
+  font-style:italic;
+  color:var(--muted);
+}
+
+/* Variante "breve" para noticias de competiciones no oficiales */
+.news-card.news-card--brief{
+  opacity:.92;
+}
+.news-card.news-card--brief .news-title{
+  font-size:1rem;
+}
+.news-card.news-card--brief img{
+  aspect-ratio:21 / 9;
+}
+
+/* =====================================================
+   PORTADA: lead grande + columna de secundarias + lista
+   ===================================================== */
+
+/* Bloque superior: en móvil apila, en desktop va a dos columnas */
+.news-front{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.news-secondary{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+/* Lead — la noticia principal, imagen arriba y titular grande */
+.news-card--lead .news-title{
+  font-size:1.45rem;
+  line-height:1.2;
+}
+
+/* Secundarias — cards horizontales compactas (miniatura + titular) */
+.news-card--sec > a{
+  display:flex !important;
+  flex-direction:row;
+  height:100%;
+}
+.news-card--sec img{
+  width:40%;
+  max-width:160px;
+  flex-shrink:0;
+  aspect-ratio:4 / 3;
+  height:auto;
+  align-self:stretch;
+}
+.news-card--sec .content{
+  flex:1;
+  min-width:0;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+}
+.news-card--sec .news-card-header{
+  margin:0;
+}
+.news-card--sec .news-title{
+  font-size:1.02rem;
+  line-height:1.25;
+  margin:2px 0;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+@media (min-width: 720px){
+  .news-front{
+    flex-direction:row;
+    align-items:stretch;
+  }
+  .news-front > .news-card--lead{
+    flex:1 1 58%;
+    min-width:0;
+  }
+  .news-secondary{
+    flex:1 1 42%;
+    min-width:0;
+    justify-content:space-between;
+  }
+  .news-card--lead .news-title{
+    font-size:1.85rem;
+  }
+  .news-card--lead .news-resumen{
+    font-size:1rem;
+    margin:6px 0 8px;
+    -webkit-line-clamp:3;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+}
+
+/* ==== Lista compacta "Más noticias" ==== */
+.news-rest__title{
+  font-size:.95rem;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 6px;
+  padding-bottom:10px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.news-rest__list{
+  display:flex;
+  flex-direction:column;
+}
+.news-row{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:12px;
+  padding:11px 6px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  color:inherit;
+  text-decoration:none;
+  transition:background .12s ease, padding-left .12s ease;
+}
+.news-row:hover{
+  background:rgba(255,255,255,.03);
+  padding-left:12px;
+  text-decoration:none;
+}
+.news-row__badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:8px;
+  font-size:1rem;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  flex-shrink:0;
+}
+.news-row__title{
+  font-weight:700;
+  line-height:1.3;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.news-row__date{
+  color:var(--muted);
+  font-size:.82rem;
+  white-space:nowrap;
+}
+@media (max-width:600px){
+  .news-row__title{
+    white-space:normal;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+  }
+}
+
+/* ==== Badges con color por familia de ángulo ==== */
+.news-badge--goals,
+.news-row__badge--goals{
+  background:rgba(31,191,74,.16);
+  border-color:rgba(31,191,74,.42);
+}
+.news-badge--discipline,
+.news-row__badge--discipline{
+  background:rgba(255,80,80,.16);
+  border-color:rgba(255,80,80,.42);
+}
+.news-badge--award,
+.news-row__badge--award{
+  background:rgba(255,196,60,.16);
+  border-color:rgba(255,196,60,.45);
+}
+.news-badge--data,
+.news-row__badge--data{
+  background:rgba(80,150,255,.16);
+  border-color:rgba(80,150,255,.42);
+}
+/* misc usa el neutro por defecto del .news-badge */
+
+/* === Modal: cabecera meta (badge + autor + fecha) === */
+#news-meta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:6px 0 14px;
+  font-size:.85rem;
+  color:var(--muted);
+}
+#news-meta .news-badge{
+  font-size:.78rem;
+}
+#news-meta .news-author{
+  flex:0 1 auto;
+  white-space:normal;
+}
+
+/* === Banner de contexto cuando filtras por entity (?player_id, ?league_team_id) === */
+.news-context-banner{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:10px 14px;
+  border-radius:10px;
+  background:rgba(120,180,255,.08);
+  border:1px solid rgba(120,180,255,.20);
+  color:var(--text, #e8eef5);
+  font-size:.9rem;
+  margin:0 0 14px;
+}
+.news-context-banner a{
+  color:var(--accent, #6cf);
+  text-decoration:underline;
+}
+
+/* === Widget "Noticias relacionadas" embebible en fichas === */
+.noticias-rel{
+  margin:18px 0;
+}
+.noticias-rel__header{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px;
+}
+.noticias-rel__title{
+  font-size:1rem;
+  font-weight:800;
+  margin:0;
+  letter-spacing:.02em;
+}
+.noticias-rel__more{
+  font-size:.82rem;
+  color:var(--accent, #6cf);
+  text-decoration:none;
+}
+.noticias-rel__more:hover{ text-decoration:underline; }
+.noticias-rel__list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.noticia-rel-item{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:10px;
+  padding:8px 12px;
+  border-radius:10px;
+  background:var(--bg-elevated, rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.06);
+  color:inherit;
+  text-decoration:none;
+  transition:border-color .12s ease, transform .12s ease;
+}
+.noticia-rel-item:hover{
+  border-color:var(--accent-soft, rgba(108,204,255,.35));
+  transform:translateX(2px);
+  text-decoration:none;
+}
+.noticia-rel-titulo{
+  font-weight:700;
+  line-height:1.3;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+.noticia-rel-meta{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:var(--muted);
+  font-size:.78rem;
+  white-space:nowrap;
+}
+.noticia-rel-fecha{ color:var(--muted); }
+@media (max-width:640px){
+  .noticia-rel-item{ grid-template-columns:auto 1fr; }
+  .noticia-rel-meta{ grid-column:1 / -1; }
+}
+
+/* Chip de competición (solo en vista global) */
+.news-comp-chip{
+  display:inline-flex;
+  align-items:center;
+  padding:3px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.10);
+  color:var(--text, #e8eef5);
+  font-size:.72rem;
+  font-weight:600;
+  letter-spacing:.02em;
+  white-space:nowrap;
+  text-decoration:none;
+  transition:background .12s ease, border-color .12s ease;
+}
+.news-comp-chip:hover{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.20);
+  text-decoration:none;
+}
+.news-comp-chip--official{
+  border-color:rgba(120,180,255,.25);
+}
+
+/* === Markdown rendering (el cuerpo generado por el news-writer) === */
+.news-article h2{
+  font-size:1.4rem;
+  margin:1rem 0 .5rem;
+  line-height:1.25;
+}
+.news-article h3{
+  font-size:1.15rem;
+  margin:.9rem 0 .4rem;
+}
+.news-article p{
+  margin:.7rem 0;
+  line-height:1.55;
+}
+.news-article ul,
+.news-article ol{
+  margin:.6rem 0 .8rem 1.2rem;
+  padding-left:.8rem;
+}
+.news-article li{
+  margin:.25rem 0;
+  line-height:1.5;
+}
+.news-article a{
+  color:var(--accent, #6cf);
+  text-decoration:underline;
+}
+.news-article hr{
+  border:none;
+  border-top:1px solid rgba(255,255,255,.12);
+  margin:1.4rem 0 1rem;
+}
+.news-article code{
+  background:rgba(255,255,255,.08);
+  padding:1px 5px;
+  border-radius:4px;
+  font-size:.92em;
+}
+.news-article strong{
+  color:var(--text, #e8eef5);
+  font-weight:700;
+}
+

@@ -1,0 +1,166 @@
+/* ════════════════════════════════════════════════════════════════
+   Apuestas / predicciones de managers — estilos compartidos
+   Usados en: partido.html (tab Apuestas) y manager.html (tab Predicciones).
+   Antes vivían en partido.css; se extrajeron aquí para que manager.html
+   (que solo carga style.css) también los reciba.
+   Paleta del proyecto: --accent (verde), --card, --border-subtle, --muted.
+   ════════════════════════════════════════════════════════════════ */
+
+.pred-form-wrap {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md, 10px);
+}
+.pred-form { display: flex; flex-direction: column; gap: 10px; }
+.pred-row { display: flex; flex-direction: column; gap: 4px; }
+.pred-row label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.pred-row select, .pred-row input[type="number"] {
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--r-sm, 6px);
+  font-size: 0.95rem;
+}
+.pred-row select:focus, .pred-row input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.pred-score-inputs { display: flex; align-items: center; gap: 10px; }
+.pred-score-inputs input { width: 80px; text-align: center; }
+.pred-score-sep { font-size: 1.2rem; font-weight: 700; color: var(--muted); }
+.pred-actions { flex-direction: row; align-items: center; gap: 12px; }
+.pred-submit-btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #07120a;
+  border: 0;
+  border-radius: var(--r-sm, 6px);
+  font-weight: 700;
+  cursor: pointer;
+}
+.pred-submit-btn:hover { filter: brightness(1.08); }
+.pred-form-msg { font-size: 0.85rem; }
+.pred-form-msg.pred-form-error { color: var(--c-danger, #ef4444); }
+.pred-form-msg.pred-form-ok { color: var(--accent); }
+
+.pred-list { display: flex; flex-direction: column; gap: 8px; }
+.pred-list-empty { padding: 12px; text-align: center; font-style: italic; }
+.pred-card {
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md, 10px);
+  border-left: 3px solid var(--border-subtle);
+}
+.pred-card.pred-card-hit     { border-left-color: var(--accent); }
+.pred-card.pred-card-partial { border-left-color: var(--c-warning, #f59e0b); }
+.pred-card.pred-card-miss    { border-left-color: var(--c-danger, #ef4444); }
+.pred-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.pred-author { font-weight: 700; color: var(--text); }
+.pred-kind-pill {
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--muted);
+}
+.pred-badge {
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.pred-badge-hit     { background: var(--accent-soft); color: var(--accent); }
+.pred-badge-partial { background: rgba(245, 158, 11, 0.15); color: var(--c-warning, #f59e0b); }
+.pred-badge-miss    { background: rgba(239, 68, 68, 0.15);  color: var(--c-danger, #ef4444); }
+.pred-body { font-size: 0.95rem; color: var(--text); }
+
+/* ─── Panel de tendencias en tab Apuestas ─── */
+.trends-wrap {
+  margin: 16px 0;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md, 10px);
+}
+.trends-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.trends-block + .trends-block { margin-top: 14px; }
+.trends-block-title {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.trends-bars { display: flex; flex-direction: column; gap: 6px; }
+.trends-bar {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+.trends-bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: var(--text);
+}
+.trends-bar-track {
+  position: relative;
+  height: 10px;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.trends-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.trends-bar-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.82rem;
+  min-width: 70px;
+  text-align: right;
+}
+.trends-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.trends-chip {
+  padding: 4px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.trends-chip-top {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .trends-bar { grid-template-columns: 1fr auto; }
+  .trends-bar-label { grid-column: 1 / 3; font-size: 0.85rem; }
+  .trends-bar-track { grid-column: 1; }
+  .trends-bar-pct { grid-column: 2; }
+}

@@ -1,0 +1,491 @@
+/* ============================================
+   Sorteo — Preview / Prototipo
+   ============================================ */
+
+.page-draw-preview {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top, #1a2238 0%, #0b0f1a 60%) fixed;
+  color: var(--fg, #e6e8ee);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Atmósfera: partículas/polvo brillante de fondo (estrellas estáticas con drift sutil). */
+.page-draw-preview::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255,240,200,0.6) 1px, transparent 1.5px),
+    radial-gradient(circle at 80% 12%, rgba(255,240,200,0.4) 1px, transparent 1.5px),
+    radial-gradient(circle at 25% 75%, rgba(255,240,200,0.5) 1px, transparent 1.5px),
+    radial-gradient(circle at 90% 65%, rgba(255,240,200,0.4) 1px, transparent 1.5px),
+    radial-gradient(circle at 50% 30%, rgba(255,240,200,0.3) 1px, transparent 1.5px),
+    radial-gradient(circle at 60% 85%, rgba(255,240,200,0.5) 1px, transparent 1.5px),
+    radial-gradient(circle at 5% 55%, rgba(255,240,200,0.3) 1px, transparent 1.5px),
+    radial-gradient(circle at 95% 90%, rgba(255,240,200,0.4) 1px, transparent 1.5px),
+    radial-gradient(circle at 35% 5%, rgba(255,240,200,0.3) 1px, transparent 1.5px),
+    radial-gradient(circle at 70% 45%, rgba(255,240,200,0.4) 1px, transparent 1.5px);
+  animation: dp-stars-twinkle 6s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+/* Viñeta oscura en los bordes para concentrar la atención en el centro. */
+.page-draw-preview::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 80% at 50% 45%, transparent 40%, rgba(0,0,0,0.75) 100%);
+  z-index: 0;
+}
+
+@keyframes dp-stars-twinkle {
+  0%   { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Por encima de la capa de atmósfera */
+.dp-header, .dp-main { position: relative; z-index: 1; }
+
+.dp-header {
+  text-align: center;
+  padding: 2rem 1rem 0.5rem;
+}
+.dp-header h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+}
+.dp-header .muted {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.dp-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ============================================
+   Bombo (sphere with balls)
+   ============================================ */
+.dp-stage {
+  position: relative;
+  min-height: 480px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-top: 110px;
+}
+
+/* Cono de luz cenital sobre el bombo. */
+.dp-spotlight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+  height: 100%;
+  pointer-events: none;
+  background:
+    /* haz vertical: blanco-cálido degradado hacia abajo */
+    linear-gradient(180deg,
+      rgba(255, 235, 190, 0.18) 0%,
+      rgba(255, 235, 190, 0.10) 30%,
+      rgba(255, 235, 190, 0.04) 55%,
+      transparent 75%),
+    /* glow concentrado donde está el bombo */
+    radial-gradient(ellipse 70% 35% at 50% 75%,
+      rgba(255, 220, 160, 0.20) 0%,
+      transparent 70%);
+  filter: blur(2px);
+  z-index: 0;
+}
+
+/* Wrapper bombo + pedestal: se apilan verticalmente y se centran. */
+.dp-bombo-stand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+.dp-bombo {
+  position: relative;
+  width: 280px;
+  height: 280px;
+}
+
+/* Pedestal con cara superior elíptica (vista en perspectiva). */
+.dp-pedestal {
+  position: relative;
+  width: 220px;
+  height: 80px;
+  margin-top: -22px;            /* se solapa con la base del bombo */
+  z-index: -1;                  /* el bombo se ve "sentado" encima */
+}
+.dp-pedestal-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  border-radius: 50% / 100%;
+  background: linear-gradient(135deg, #d4af37 0%, #8a6f2b 60%, #5c4818 100%);
+  box-shadow:
+    inset 0 -3px 6px rgba(0,0,0,0.4),
+    inset 0 3px 8px rgba(255,235,160,0.6),
+    0 6px 14px rgba(0,0,0,0.5);
+}
+.dp-pedestal-side {
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  width: calc(100% - 16px);
+  height: 60px;
+  border-radius: 0 0 50% 50% / 0 0 30% 30%;
+  background:
+    linear-gradient(180deg,
+      #4a3a18 0%,
+      #2a2010 60%,
+      #18120a 100%),
+    linear-gradient(90deg,
+      rgba(212,175,55,0.2) 0%,
+      rgba(212,175,55,0.05) 50%,
+      rgba(212,175,55,0.2) 100%);
+  background-blend-mode: overlay;
+  box-shadow:
+    inset 0 -8px 14px rgba(0,0,0,0.6),
+    0 12px 20px rgba(0,0,0,0.5);
+}
+
+/* Esfera transparente con rim highlight */
+.dp-bombo-sphere {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 18%, transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04) 0%, transparent 70%);
+  box-shadow:
+    inset 0 0 60px rgba(255,255,255,0.05),
+    inset 0 -10px 40px rgba(0,0,0,0.4),
+    0 0 60px rgba(34,197,94,0.15),
+    0 8px 24px rgba(0,0,0,0.4);
+  border: 2px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(2px);
+}
+
+.dp-bombo-balls {
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  /* overflow visible: la bola extraída debe poder volar arriba del bombo.
+     Las bolas en reposo se mantienen dentro porque el cluster + el jitter
+     están dimensionados para no escapar visiblemente del sphere. */
+  overflow: visible;
+}
+
+.dp-ball {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: transparent;
+  perspective: 600px;
+  will-change: transform;
+  animation: dp-jitter var(--ball-dur, 3s) ease-in-out infinite;
+  animation-delay: var(--ball-delay, 0s);
+  top: var(--ball-top, 50%);
+  left: var(--ball-left, 50%);
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+
+/* Cuando hay física JS (movimiento + repulsión al cursor) desactivamos
+   el jitter CSS — el transform se reescribe cada frame en JS. */
+.dp-ball.dp-ball-physics {
+  animation: none;
+}
+
+/* Dos hemisferios opacos que tapan el contenido hasta la apertura.
+   Color uniforme tipo perla/marfil: el color del equipo NO se conoce hasta abrir.
+   El team color (--ball-color) se sigue usando para la "ranura" del ecuador
+   y para el glow al extraer, como pista sutil pero sin revelar quién es. */
+.dp-ball-shell {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #fdfcf6 0%, #ecdfb8 55%, #c9b88a 100%);
+  box-shadow:
+    inset -6px -8px 16px rgba(80,60,30,0.25),
+    inset 6px 8px 14px rgba(255,255,255,0.55),
+    0 4px 10px rgba(0,0,0,0.35);
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.5s ease-out 0.4s;
+  backface-visibility: hidden;
+  z-index: 2;
+}
+.dp-ball-shell-top {
+  top: 0;
+  border-radius: 50% 50% 0 0;
+  transform-origin: center bottom;
+}
+.dp-ball-shell-bottom {
+  bottom: 0;
+  border-radius: 0 0 50% 50%;
+  transform-origin: center top;
+}
+
+.dp-ball-content {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.4s ease-out 0.25s, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s;
+  z-index: 1;
+}
+.dp-ball-crest {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+/* Apertura: las shells rotan en X y se desvanecen; el escudo emerge. */
+.dp-ball.is-opening .dp-ball-shell-top {
+  transform: rotateX(-135deg) translateY(-2px);
+  opacity: 0;
+}
+.dp-ball.is-opening .dp-ball-shell-bottom {
+  transform: rotateX(135deg) translateY(2px);
+  opacity: 0;
+}
+.dp-ball.is-opening .dp-ball-content {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+@keyframes dp-jitter {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  20%      { transform: translate(-50%, -50%) translate(-12px, 8px) rotate(-12deg); }
+  40%      { transform: translate(-50%, -50%) translate(10px, -6px) rotate(15deg); }
+  60%      { transform: translate(-50%, -50%) translate(-6px, 12px) rotate(-8deg); }
+  80%      { transform: translate(-50%, -50%) translate(8px, 4px) rotate(10deg); }
+}
+
+/* Bola "extraída": se eleva, crece y deja de jitterar */
+.dp-ball.is-extracted {
+  animation: none;
+  transition: top 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+              left 0.7s ease-in-out,
+              transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.7s ease-out;
+  z-index: 10;
+}
+
+/* Bola clickable: cursor + ligera elevación al hover. */
+.dp-ball { cursor: pointer; }
+.dp-ball:hover:not(.is-extracted) {
+  z-index: 5;
+}
+.dp-ball:hover:not(.is-extracted) .dp-ball-shell {
+  box-shadow:
+    inset -6px -8px 16px rgba(80,60,30,0.25),
+    inset 6px 8px 14px rgba(255,255,255,0.65),
+    0 0 18px rgba(255, 235, 190, 0.5),
+    0 4px 14px rgba(0,0,0,0.5);
+}
+
+/* Lock: durante una extracción no se puede clickar otra bola. */
+.dp-bombo-balls.is-locked { pointer-events: none; }
+.dp-bombo-balls.is-locked .dp-ball { cursor: default; }
+
+/* ============================================
+   Reveal card (cuando se "abre" la bola)
+   ============================================ */
+.dp-reveal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 20;     /* por encima del bombo (z:1) y de la bola extraída (z:10) */
+}
+
+.dp-reveal-card {
+  background: linear-gradient(135deg, #131826 0%, #1f2638 100%);
+  border: 2px solid var(--reveal-color, var(--accent));
+  border-radius: 14px;
+  padding: 1rem 1.5rem;
+  box-shadow:
+    0 0 40px var(--reveal-color, var(--accent)),
+    0 12px 30px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  animation: dp-reveal-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-width: 160px;
+}
+
+@keyframes dp-reveal-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.dp-reveal-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.dp-reveal-name {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.dp-reveal.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-out;
+}
+
+/* ============================================
+   Bracket
+   ============================================ */
+.dp-bracket {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .dp-bracket { grid-template-columns: 1fr; }
+}
+
+.dp-pair {
+  background: var(--bg-elevated, #131826);
+  border: 1px solid var(--border-subtle, #242a3a);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.4;
+  transition: opacity 0.4s ease-out, border-color 0.4s ease-out, box-shadow 0.4s;
+}
+
+.dp-pair.is-active {
+  opacity: 1;
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(34,197,94,0.2);
+}
+
+.dp-pair-slot {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--muted);
+  transition: background 0.4s, color 0.4s;
+}
+
+.dp-pair-slot.is-filled {
+  background: var(--slot-color, var(--accent-soft));
+  color: var(--fg, #e6e8ee);
+  animation: dp-slot-fill 0.5s ease-out;
+  gap: 8px;
+}
+.dp-slot-crest {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.dp-slot-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes dp-slot-fill {
+  0%   { transform: scale(0.85); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.dp-pair-vs {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+/* ============================================
+   Controls
+   ============================================ */
+.dp-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dp-btn {
+  background: var(--bg-elevated, #131826);
+  border: 1px solid var(--border-subtle, #242a3a);
+  color: var(--fg, #e6e8ee);
+  padding: 0.65rem 1.3rem;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+.dp-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.dp-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dp-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b0f1a;
+}
+.dp-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}

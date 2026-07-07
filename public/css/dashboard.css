@@ -1,0 +1,433 @@
+/* Dashboard Styles */
+
+.page-dashboard {
+  background: var(--bg, #050812);
+  color: var(--text, #e8eef9);
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Header del usuario */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+}
+
+.dashboard-user-info h2 {
+  color: var(--text, #e8eef9);
+}
+
+.dashboard-user-info h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+}
+
+.dashboard-user-info p {
+  margin: 0;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Botones adicionales */
+.btn-secondary {
+  background: var(--bg-elevated, #101522);
+  color: var(--text, #e8eef9);
+  border: 1px solid var(--border-subtle, #202735);
+}
+
+.btn-secondary:hover {
+  background: var(--card, #151a22);
+  border-color: var(--accent, #1fbf4a);
+  color: var(--accent, #1fbf4a);
+}
+
+/* Secciones */
+.dashboard-section {
+  margin-bottom: 2rem;
+}
+
+.dashboard-section h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: var(--text, #e8eef9);
+}
+
+.dashboard-section-footer {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* Resumen Global */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  padding: 1.5rem;
+  border-radius: 16px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.summary-card:hover {
+  border-color: var(--accent, #1fbf4a);
+  transform: translateY(-2px);
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: var(--muted, #9fb3c8);
+  margin-bottom: 0.5rem;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--accent, #1fbf4a);
+}
+
+/* Grid de competiciones */
+.competitions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Cards de competición */
+.competition-card {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.competition-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent, #1fbf4a);
+  box-shadow: 0 8px 24px rgba(31, 191, 74, 0.15);
+}
+
+.competition-card-header {
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle, #202735);
+}
+
+.competition-card-header h3 {
+  color: var(--text, #e8eef9);
+}
+
+.competition-card-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.competition-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.competition-card-body {
+  padding: 1rem 1.5rem;
+}
+
+.competition-description {
+  margin: 0 0 1rem 0;
+  color: var(--muted, #9fb3c8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.competition-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.competition-meta-item {
+  color: var(--muted, #9fb3c8);
+}
+
+.competition-meta-item strong {
+  color: var(--text, #e8eef9);
+}
+
+.competition-card-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-subtle, #202735);
+  background: var(--bg-elevated, #101522);
+}
+
+.competition-card-preview {
+  opacity: 0.9;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-official {
+  background: var(--accent, #1fbf4a);
+  color: var(--bg, #050812);
+}
+
+.badge-unofficial {
+  background: var(--muted, #9fb3c8);
+  color: var(--bg, #050812);
+}
+
+.badge-active {
+  background: var(--accent, #1fbf4a);
+  color: var(--bg, #050812);
+}
+
+.badge-finished {
+  background: var(--muted, #9fb3c8);
+  color: var(--bg, #050812);
+}
+
+.badge-open {
+  background: #ffc107;
+  color: var(--bg, #050812);
+}
+
+.badge-draft {
+  background: var(--border-subtle, #202735);
+  color: var(--muted, #9fb3c8);
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  color: var(--muted, #9fb3c8);
+}
+
+.empty-state p {
+  margin-bottom: 1rem;
+}
+
+/* Error message */
+.error-message {
+  background: rgba(220, 53, 69, 0.15);
+  color: #ff6b7a;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* Section subtitle */
+.section-subtitle {
+  color: var(--muted, #9fb3c8);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Stats table */
+.stats-table-container {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stats-table thead {
+  background: var(--bg-elevated, #101522);
+}
+
+.stats-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text, #e8eef9);
+  border-bottom: 2px solid var(--border-subtle, #202735);
+}
+
+.stats-table td {
+  padding: 0.75rem 1rem;
+  color: var(--text, #e8eef9);
+  border-bottom: 1px solid var(--border-subtle, #202735);
+}
+
+.stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stats-table tbody tr:hover {
+  background: var(--bg-elevated, #101522);
+}
+
+.stats-table td strong {
+  color: var(--accent, #1fbf4a);
+  font-size: 1.1rem;
+}
+
+/* Estadísticas por Equipo */
+.team-stats-card {
+  background: var(--card, #151a22);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.team-stats-card:hover {
+  border-color: var(--accent, #1fbf4a);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(31, 191, 74, 0.15);
+}
+
+.team-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle, #202735);
+}
+
+.team-stats-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text, #e8eef9);
+}
+
+.team-competitions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.team-competitions-list {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.competition-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--bg-elevated, #101522);
+  border: 1px solid var(--border-subtle, #202735);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: var(--muted, #9fb3c8);
+}
+
+.badge-info {
+  background: rgba(31, 191, 74, 0.1);
+  border-color: var(--accent, #1fbf4a);
+  color: var(--accent, #1fbf4a);
+}
+
+.team-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.team-stat-item {
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--bg-elevated, #101522);
+  border-radius: 8px;
+}
+
+.team-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted, #9fb3c8);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.team-stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text, #e8eef9);
+}
+
+.team-stat-value.positive {
+  color: var(--accent, #1fbf4a);
+}
+
+.team-stat-value.negative {
+  color: #ff6b6b;
+}
+
+.team-stat-value.highlight {
+  color: var(--accent, #1fbf4a);
+  font-size: 1.75rem;
+}
+
+.section-subtitle {
+  color: var(--muted, #9fb3c8);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .dashboard-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .dashboard-actions .btn {
+    width: 100%;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .competitions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

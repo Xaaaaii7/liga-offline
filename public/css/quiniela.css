@@ -1,0 +1,161 @@
+/* ─── Quiniela 1X2 standalone ─── */
+
+.quiniela-loading,
+.quiniela-error {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-2, #b8b8c0);
+}
+.quiniela-error code {
+  background: rgba(255,255,255,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.quiniela-hero {
+  margin-bottom: 16px;
+}
+.quiniela-hero-title {
+  margin: 0 0 4px;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.quiniela-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--surface, #15151a);
+  border: 1px solid var(--border, #2a2a30);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.quiniela-toolbar-bottom {
+  margin-top: 16px;
+  margin-bottom: 0;
+  justify-content: center;
+}
+.quiniela-toolbar label {
+  font-weight: 600;
+}
+.quiniela-toolbar select {
+  padding: 6px 10px;
+  background: var(--bg, #0e0e12);
+  color: var(--text, #e8e8ee);
+  border: 1px solid var(--border, #2a2a30);
+  border-radius: 6px;
+  min-width: 180px;
+}
+.quiniela-toolbar .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#qn-msg.qn-msg-ok    { color: #6cb069; }
+#qn-msg.qn-msg-error { color: #e07070; }
+
+.quiniela-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qn-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface, #15151a);
+  border: 1px solid var(--border, #2a2a30);
+  border-radius: 8px;
+}
+.qn-row-played {
+  opacity: 0.85;
+  background: var(--surface-alt, #1c1c22);
+}
+
+.qn-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.qn-team-home { justify-content: flex-end; flex-direction: row; }
+.qn-team-away { justify-content: flex-start; }
+.qn-team-home .qn-team-name { text-align: right; }
+.qn-crest {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.qn-team-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qn-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.qn-pick-btn {
+  padding: 8px 0;
+  background: var(--bg, #0e0e12);
+  color: var(--text, #e8e8ee);
+  border: 1px solid var(--border, #2a2a30);
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.05s ease;
+}
+.qn-pick-btn:hover:not(:disabled) {
+  background: rgba(120, 90, 220, 0.15);
+  border-color: rgba(120, 90, 220, 0.55);
+}
+.qn-pick-btn.selected {
+  background: rgba(120, 90, 220, 0.35);
+  border-color: rgba(120, 90, 220, 1);
+  color: #fff;
+}
+.qn-pick-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.qn-pick-btn.played.correct {
+  background: rgba(108, 176, 105, 0.25);
+  border-color: #6cb069;
+  color: #d6f0d4;
+}
+
+.qn-info {
+  font-size: 0.85rem;
+  color: var(--text-2, #b8b8c0);
+  text-align: right;
+  min-width: 80px;
+}
+.qn-played-result {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.qn-played-result.muted { font-weight: 500; }
+
+@media (max-width: 720px) {
+  .qn-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .qn-team-home, .qn-team-away {
+    justify-content: center;
+    flex-direction: row;
+  }
+  .qn-team-home .qn-team-name { text-align: left; }
+  .qn-info { text-align: center; }
+}

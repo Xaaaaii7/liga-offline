@@ -1,0 +1,197 @@
+/* ==========================
+   DIRECTOS – LAYOUT PRINCIPAL
+   ========================== */
+
+.stream-layout{
+  display:grid;
+  grid-template-columns:2.3fr 1fr;
+  gap:16px;
+  align-items:flex-start;
+}
+
+.stream-main h2{
+  margin-top:0;
+  margin-bottom:8px;
+}
+
+.directo-status{
+  margin-top:8px;
+  font-size:0.9rem;
+  color:var(--muted);
+}
+
+/* Marco del vídeo principal */
+.video-frame{
+  border-radius:18px;
+  overflow:hidden;
+  background:#020617;
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 18px 40px rgba(0,0,0,.65);
+}
+
+/* Aseguramos el estilo del iframe de Twitch */
+.video-frame .video{
+  width:100%;
+  aspect-ratio:16/9;
+  border:0;
+  display:block;
+}
+
+/* Sidebar de otros canales */
+.stream-list{
+  background:var(--bg-elevated);
+  border-radius:16px;
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
+}
+
+.stream-list h3{
+  margin:0 0 10px;
+  font-size:0.85rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+}
+
+/* Tarjetas de canales laterales */
+.stream-card{
+  width:100%;
+  text-align:left;
+  background:var(--card);
+  border-radius:12px;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,0.06);
+  cursor:pointer;
+  margin-bottom:8px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.stream-card-name{
+  font-weight:600;
+  font-size:0.95rem;
+}
+
+.stream-card-tag{
+  font-size:0.8rem;
+  color:var(--muted);
+}
+
+.stream-card.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px rgba(31,191,74,0.4);
+}
+
+.stream-card:hover:not(.active){
+  border-color:rgba(255,255,255,0.18);
+}
+
+/* Chips de estado en directos (por si no estaban) */
+.chip-live{
+  background:#16a34a;
+  color:#e9fdf1;
+}
+.chip-ended{
+  background:#4b5563;
+  color:#e5e7eb;
+}
+
+/* ==========================
+   PARTIDO EN JUEGO / PRÓXIMO PARTIDO
+   ========================== */
+
+.directo-match-hero{
+  margin-top:16px;
+  padding:12px 14px 14px;
+  border-radius:20px;
+  background:linear-gradient(135deg,
+    rgba(15,23,42,0.98),
+    rgba(16,185,129,0.55)
+  );
+  border:1px solid rgba(52,211,153,0.8);
+  box-shadow:0 18px 40px rgba(0,0,0,.65);
+}
+
+.directo-match-label{
+  font-size:0.8rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#bbf7d0;
+  margin-bottom:6px;
+}
+
+.directo-match-logos{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:28px;
+  margin-top:4px;
+}
+
+.directo-match-team{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.directo-match-logo-wrap{
+  width:72px;
+  height:72px;
+  border-radius:20px;
+  background:#020617;
+  padding:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.directo-match-logo-wrap img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+.directo-match-name{
+  font-size:1rem;
+  font-weight:700;
+  text-align:center;
+}
+
+.directo-match-vs{
+  font-size:1.1rem;
+  font-weight:800;
+  color:#e5e7eb;
+}
+
+.directo-match-meta{
+  margin-top:8px;
+  text-align:center;
+  font-size:0.9rem;
+  color:#d1fae5;
+}
+
+/* Responsive: una columna en móvil */
+@media (max-width:800px){
+  .stream-layout{
+    grid-template-columns:1fr;
+  }
+  .stream-list{
+    margin-top:12px;
+  }
+}
+
+@media (max-width:600px){
+  .directo-match-logos{
+    gap:18px;
+  }
+  .directo-match-logo-wrap{
+    width:62px;
+    height:62px;
+    border-radius:18px;
+  }
+  .directo-match-name{
+    font-size:0.95rem;
+  }
+}

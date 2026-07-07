@@ -1,0 +1,1413 @@
+/* ========================================
+   PARTIDO.CSS — Página de detalle de partido
+   ======================================== */
+
+/* ── Loading ─────────────────────────── */
+.partido-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.partido-error {
+  text-align: center;
+  padding: 60px 20px;
+  color: #ef4444;
+}
+
+/* ── Hero horizontal (reemplaza el sidebar sticky anterior) ─── */
+.partido-hero {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xl, 20px);
+  padding: var(--s-6, 24px) var(--s-5, 20px);
+  margin-bottom: var(--s-6, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4, 16px);
+}
+
+.partido-meta-comp {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.partido-meta-line {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.partido-meta-referee {
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.partido-meta-referee:hover {
+  color: var(--text-default);
+  border-bottom-color: var(--accent, #1fbf4a);
+}
+
+.partido-hero-main {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--s-6, 24px);
+  align-items: center;
+}
+
+.partido-hero-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3, 12px);
+  min-width: 0;
+}
+
+.partido-hero-badge {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.partido-hero-team-name {
+  font-size: var(--fs-md, 1.12rem);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.partido-hero-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.partido-hero-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.partido-hero-score-value {
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-weight: 900;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.partido-hero-score-sep {
+  font-size: 1.6rem;
+  color: var(--muted);
+}
+
+.partido-hero-pending {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.partido-hero-scorers {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 700px) {
+  .partido-hero-main {
+    gap: 8px;
+  }
+  .partido-hero-badge {
+    width: 56px;
+    height: 56px;
+  }
+  .partido-hero-team-name {
+    font-size: 0.85rem;
+  }
+  .partido-hero-score-value {
+    font-size: 2.2rem;
+  }
+}
+
+/* Goleadores en el hero (clases compartidas con código antiguo) */
+.partido-scorers-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.partido-scorers-col-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.partido-scorer-item {
+  font-size: 0.8rem;
+  color: var(--text);
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.partido-scorer-item .scorer-icon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.partido-no-scorers {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ── Área de tabs ────────────────────── */
+.partido-tabs-area {
+  min-width: 0;
+}
+
+.partido-tabs-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border-subtle);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.partido-tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.partido-tab-btn {
+  padding: 10px 18px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s;
+}
+.partido-tab-btn:hover {
+  color: var(--text);
+}
+.partido-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.partido-tab-panel {
+  display: none;
+}
+.partido-tab-panel.active {
+  display: block;
+}
+
+/* ── Tab: Alineación ─────────────────── */
+.partido-lineup-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Contenedor del campo */
+.partido-field-container {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* Reutilizamos .club-formation-field de clubs.css */
+/* Pero añadimos variaciones necesarias */
+.partido-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
+.partido-field-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* Mitad del campo: línea divisoria visual */
+.partido-field-midline {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: rgba(255,255,255,0.18);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Chip de jugador en el campo */
+.partido-player-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: default;
+  pointer-events: none;
+}
+
+.partido-player-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  border: 2px solid rgba(255,255,255,0.6);
+  flex-shrink: 0;
+}
+
+.partido-player-dot.home {
+  background: #1a56db;
+  border-color: #60a5fa;
+}
+
+.partido-player-dot.away {
+  background: #dc2626;
+  border-color: #fca5a5;
+}
+
+.partido-player-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  max-width: 70px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(0,0,0,0.75);
+  padding: 1px 5px;
+  border-radius: 4px;
+  line-height: 1.3;
+}
+
+.partido-red-card-icon {
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+/* Leyenda de equipos en el campo */
+.partido-field-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 4px;
+  margin-bottom: 4px;
+}
+
+.partido-field-legend-home {
+  color: #60a5fa;
+}
+.partido-field-legend-away {
+  color: #fca5a5;
+}
+
+/* Suplentes */
+.partido-subs-section {
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.partido-subs-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.partido-subs-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.partido-subs-col-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.partido-sub-player {
+  font-size: 0.82rem;
+  color: var(--text);
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.partido-no-lineup {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ── Tab: Stats (Premier Style) ──────── */
+.partido-stats-no-data {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.ps-stats-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Nombres de equipos arriba */
+.ps-header-teams {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}
+.ps-team-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.ps-team-label.home { color: #60a5fa; }
+.ps-team-label.away { color: #fca5a5; }
+
+/* Sección contenedora */
+.ps-section {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ps-section-header {
+  padding: 8px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ps-section-rows {
+  padding: 2px 0;
+}
+
+/* Fila de stat */
+.ps-stat-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  position: relative;
+}
+.ps-stat-row:last-child { border-bottom: none; }
+
+/* Indicador de ganador: barra vertical */
+.ps-stat-row::before {
+  content: '';
+  position: absolute;
+  top: 15%; bottom: 15%;
+  width: 3px;
+  border-radius: 2px;
+  opacity: 0;
+}
+.ps-stat-row.ps-winner-home::before {
+  left: 0;
+  background: #60a5fa;
+  opacity: 1;
+}
+.ps-stat-row.ps-winner-away::before {
+  right: 0;
+  background: #fca5a5;
+  opacity: 1;
+}
+
+/* Valores */
+.ps-val {
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: font-size 0.15s;
+}
+.ps-val.home { text-align: right; color: #60a5fa; }
+.ps-val.away { text-align: left;  color: #fca5a5; }
+.ps-val.ps-best {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+/* Etiqueta central */
+.ps-label {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Fila de posesión */
+.ps-possession-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.ps-possession-row:last-child { border-bottom: none; }
+
+.ps-possession-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.ps-possession-bar {
+  display: flex;
+  width: 100%;
+  height: 7px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ps-possession-bar-home {
+  background: #60a5fa;
+  transition: width 0.4s ease;
+}
+.ps-possession-bar-away {
+  background: #fca5a5;
+  flex: 1;
+}
+
+/* ── Tab: Valoraciones ───────────────── */
+.partido-ratings-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.partido-ratings-no-data {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.partido-ratings-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .partido-ratings-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.partido-ratings-col-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.partido-ratings-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+}
+
+.partido-ratings-table thead th {
+  background: rgba(255,255,255,0.04);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.partido-ratings-table tbody tr:nth-child(odd) {
+  background: var(--bg-elevated);
+}
+.partido-ratings-table tbody tr:nth-child(even) {
+  background: rgba(5,8,18,0.8);
+}
+.partido-ratings-table tbody tr.best-player {
+  background: rgba(31,191,74,0.08);
+}
+
+.partido-ratings-table tbody td {
+  padding: 7px 10px;
+  color: var(--text);
+}
+
+.partido-rating-value {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.partido-mvp-badge {
+  margin-left: 4px;
+  font-size: 0.85rem;
+}
+
+.partido-ratings-upload {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.btn-upload-ratings {
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-upload-ratings:hover {
+  background: var(--accent-soft);
+}
+
+/* ── Tab: Historial ──────────────────── */
+.partido-historial-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.partido-historial-no-data {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Balance H2H */
+.partido-h2h-balance {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.partido-h2h-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.partido-h2h-team-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+
+.partido-h2h-wins {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.partido-h2h-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.partido-h2h-draws-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.partido-h2h-draws {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* Lista de partidos históricos */
+.partido-historial-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.partido-historial-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  color: var(--text);
+}
+.partido-historial-card:hover {
+  border-color: var(--accent-soft);
+  background: rgba(31,191,74,0.04);
+}
+
+.partido-historial-teams {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.partido-historial-team {
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex: 1;
+}
+.partido-historial-team.home { text-align: left; }
+.partido-historial-team.away { text-align: right; }
+
+.partido-historial-score {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  background: rgba(31,191,74,0.1);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.partido-historial-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Tab: Directo/Video ──────────────── */
+.partido-stream-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.partido-stream-no-data {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.partido-stream-block {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.partido-stream-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.partido-stream-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #000;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.partido-stream-link:hover {
+  opacity: 0.85;
+}
+
+/* ── Tab: Editar (admin) ─────────────── */
+.partido-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Reutilizar los estilos existentes del modal:
+   .scorers-editor, .redcards-editor, .injuries-editor, etc.
+   Ya están en resultados.css, solo necesitamos que funcionen en esta página */
+
+.partido-edit-section {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.partido-edit-section h3 {
+  margin-bottom: 16px;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+/* Resultado ranked */
+.partido-edit-result {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.partido-result-input {
+  width: 5ch;
+  padding: 10px 12px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.partido-result-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(31,191,74,0.2);
+}
+
+.partido-result-sep {
+  font-size: 1.4rem;
+  color: var(--muted);
+}
+
+.btn-save-partido-result {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-save-partido-result:hover {
+  opacity: 0.85;
+}
+
+.partido-save-status {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* ── Scorers/redcards/injuries editors (heredados) ── */
+.scorers-columns,
+.scorers-summary-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.scorers-col h4,
+.scorers-summary-side h5 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.scorers-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.scorers-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.btn-remove-scorer,
+.btn-remove-red,
+.btn-remove-injury {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.scorers-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.scorers-add select {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.btn-add-scorer,
+.btn-add-red,
+.btn-add-injury {
+  padding: 6px 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.scorers-actions,
+.redcards-actions,
+.injuries-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.btn-save-scorers,
+.btn-save-redcards,
+.btn-save-injuries {
+  padding: 8px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.scorers-status,
+.redcards-status,
+.injuries-status {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.scorers-summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.scorers-summary-list li {
+  font-size: 0.83rem;
+  color: var(--text);
+  padding: 2px 0;
+}
+
+.scorers-edit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.btn-toggle-scorers-edit {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.scorers-edit-panel {
+  margin-top: 8px;
+}
+
+/* Hint */
+.hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+.hint.small {
+  font-size: 0.8rem;
+}
+
+.stats-divider {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 8px 0;
+}
+
+/* ===========================================================
+   TAB: RESUMEN
+   =========================================================== */
+.partido-resumen-section-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.partido-resumen-mvp {
+  background: linear-gradient(135deg, var(--accent-soft, rgba(99,102,241,0.12)), transparent);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.partido-resumen-mvp-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.partido-resumen-mvp-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.partido-resumen-mvp-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.partido-resumen-stats {
+  margin-bottom: 24px;
+}
+.partido-resumen-stat {
+  margin-bottom: 14px;
+}
+.partido-resumen-stat-row {
+  display: grid;
+  grid-template-columns: minmax(40px, auto) 1fr minmax(40px, auto);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.partido-resumen-stat-val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+.partido-resumen-stat-val.home { color: #60a5fa; text-align: left; }
+.partido-resumen-stat-val.away { color: #fca5a5; text-align: right; }
+.partido-resumen-stat-label {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.partido-resumen-stat-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(252, 165, 165, 0.5);
+  overflow: hidden;
+}
+.partido-resumen-stat-bar-home {
+  height: 100%;
+  background: #60a5fa;
+  transition: width var(--dur-3, 320ms) var(--ease, ease);
+}
+
+.partido-resumen-goals {
+  margin-bottom: 24px;
+}
+.partido-resumen-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.partido-resumen-goal {
+  display: grid;
+  grid-template-columns: 50px auto 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.partido-resumen-goal.home {
+  background: rgba(96, 165, 250, 0.08);
+  border-left: 3px solid #60a5fa;
+}
+.partido-resumen-goal.away {
+  background: rgba(252, 165, 165, 0.08);
+  border-left: 3px solid #fca5a5;
+}
+.partido-resumen-goal-min {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.partido-resumen-resto {
+  margin-top: 24px;
+}
+.partido-resumen-resto-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 8px;
+}
+.partido-resumen-resto-card {
+  flex: 0 0 240px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color var(--dur-1, 120ms) var(--ease, ease), transform var(--dur-1, 120ms) var(--ease, ease);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.partido-resumen-resto-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.partido-resumen-resto-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.partido-resumen-resto-team.away {
+  justify-content: flex-end;
+}
+.partido-resumen-resto-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.partido-resumen-resto-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.partido-resumen-resto-score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.partido-resumen-resto-score.pending {
+  color: var(--muted);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.partido-resumen-pending,
+.partido-resumen-empty {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ===========================================================
+   TAB: EVENTOS (timeline)
+   =========================================================== */
+.partido-eventos-timed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.partido-eventos-untimed {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-subtle);
+}
+.partido-eventos-untimed-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.partido-evento {
+  display: grid;
+  grid-template-columns: 50px auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.partido-evento.home {
+  background: rgba(96, 165, 250, 0.06);
+  border-left: 3px solid #60a5fa;
+}
+.partido-evento.away {
+  background: rgba(252, 165, 165, 0.06);
+  border-left: 3px solid #fca5a5;
+}
+.partido-evento-min {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.partido-evento-icon {
+  font-size: 1rem;
+}
+.partido-evento-name {
+  font-weight: 600;
+  color: var(--text);
+}
+.partido-evento-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.partido-eventos-pending,
+.partido-eventos-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ===========================================================
+   MINI-STRIP STICKY (desktop)
+   =========================================================== */
+.partido-ministrip {
+  position: fixed;
+  top: var(--sticky-offset, 80px);
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  z-index: 50;
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--dur-2, 200ms) var(--ease, ease), opacity var(--dur-2, 200ms) var(--ease, ease);
+}
+.partido-ministrip.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.partido-ministrip-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+}
+.partido-ministrip-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 0;
+}
+.partido-ministrip-team.away {
+  justify-content: flex-end;
+}
+.partido-ministrip-team img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.partido-ministrip-team span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.partido-ministrip-score {
+  font-weight: 800;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+@media (max-width: 900px) {
+  .partido-ministrip { display: none; }
+}
+
+/* ─── Predicciones del partido (Fase 3 manager_voice) ─── */
+.partido-predicciones-section {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md, 10px);
+  background: var(--card);
+}
+.partido-predicciones-section .partido-section-title {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+/* Los estilos .pred-* y .trends-* se movieron a css/apuestas.css
+   (importado vía style.css) para que manager.html también los reciba. */
+
+/* ── Pestaña Crónica ───────────────────────────────────────── */
+.cronica-article {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.cronica-article + .cronica-article {
+  margin-top: var(--s-8, 40px);
+  padding-top: var(--s-6, 24px);
+  border-top: 1px solid var(--border-subtle);
+}
+.cronica-titulo {
+  margin: 0 0 8px;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--text-default, var(--text));
+}
+.cronica-byline {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: var(--s-5, 20px);
+}
+.cronica-byline strong { color: var(--text-default, var(--text)); }
+.cronica-img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: var(--r-lg, 14px);
+  margin-bottom: var(--s-5, 20px);
+}
+.cronica-resumen {
+  font-size: 1.12rem;
+  line-height: 1.6;
+  color: var(--text-default, var(--text));
+  margin: 0 0 var(--s-5, 20px);
+  padding-left: 14px;
+  border-left: 3px solid var(--accent, #1fbf4a);
+}
+.cronica-cuerpo {
+  font-size: 1.04rem;
+  line-height: 1.75;
+}

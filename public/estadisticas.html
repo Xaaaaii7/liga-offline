@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Jugadores</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="page-estadisticas">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1>Jugadores</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container" id="estadisticas">
+    <!-- Breadcrumb de competición -->
+    <div id="breadcrumb"></div>
+
+    <!-- PESTAÑAS -->
+    <div class="tabs tabs-estadisticas">
+      <button type="button" class="active" data-tab="tab-porteros">Porteros</button>
+      <button type="button" data-tab="tab-defensas">Defensas</button>
+      <button type="button" data-tab="tab-centrocampistas">Centrocampistas</button>
+      <button type="button" data-tab="tab-delanteros">Delanteros</button>
+      <button type="button" data-tab="tab-golden-boy">Golden Boy</button>
+      <button type="button" data-tab="tab-total">Total</button>
+      <button type="button" data-tab="tab-tarjetas-rojas">Tarjetas Rojas</button>
+      <button type="button" data-tab="tab-tarjetas-amarillas">Tarjetas Amarillas</button>
+      <button type="button" data-tab="tab-ritmo">Ritmo de Partido</button>
+    </div>
+
+    <!-- PANEL: PORTEROS -->
+    <section id="tab-porteros" class="table-wrap tab-panel active">
+      <h2>Mejores Porteros</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>Media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-porteros"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: DEFENSAS -->
+    <section id="tab-defensas" class="table-wrap tab-panel">
+      <h2>Mejores Defensas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>Media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-defensas"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: CENTROCAMPISTAS -->
+    <section id="tab-centrocampistas" class="table-wrap tab-panel">
+      <h2>Mejores Centrocampistas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>Media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-centrocampistas"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: DELANTEROS -->
+    <section id="tab-delanteros" class="table-wrap tab-panel">
+      <h2>Mejores Delanteros</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>Media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-delanteros"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: GOLDEN BOY -->
+    <section id="tab-golden-boy" class="table-wrap tab-panel">
+      <h2>Golden Boy (Jugadores Jóvenes ≤21 años)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>Media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-golden-boy"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: TOTAL -->
+    <section id="tab-total" class="table-wrap tab-panel">
+      <h2>Ranking General</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>Media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-total"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: TARJETAS ROJAS -->
+    <section id="tab-tarjetas-rojas" class="table-wrap tab-panel">
+      <h2>Tarjetas Rojas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>🟥</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-tarjetas-rojas"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: TARJETAS AMARILLAS -->
+    <section id="tab-tarjetas-amarillas" class="table-wrap tab-panel">
+      <h2>Tarjetas Amarillas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>🟨</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-tarjetas-amarillas"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: RITMO DE PARTIDO -->
+    <section id="tab-ritmo" class="table-wrap tab-panel">
+      <h2>Goles por tramo del partido</h2>
+      <div class="ritmo-controls">
+        <select id="ritmo-nivel">
+          <option value="competicion">Toda la competición</option>
+          <option value="jugador">Por jugador</option>
+        </select>
+        <select id="ritmo-jugador" style="display:none"></select>
+      </div>
+      <div id="ritmo-histograma"></div>
+
+      <h2 style="margin-top:24px">¿Quién marca primero, gana?</h2>
+      <div id="ritmo-primer-gol" class="ritmo-kpi"></div>
+
+      <h2 style="margin-top:24px">Remontadas</h2>
+      <ul id="ritmo-remontadas" class="remontadas-list"></ul>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/estadisticas.js"></script>
+</body>
+
+</html>
+
