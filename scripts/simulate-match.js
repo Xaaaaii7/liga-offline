@@ -961,9 +961,14 @@ function ratingsInsert(rows, matchId, matchUuid, competitionId, season, useVars)
     const matchUuidExpr = useVars ? 'v_match_uuid' : sqlNum(matchUuid);
     const indent = useVars ? '  ' : '';
     const values = rows.map(p =>
-        `${indent}  (${matchUuidExpr}, ${matchIdExpr}, ${p.teamId}, ${p.id}, ${sqlStr(p.name)}, ${p.rating}, ${competitionId}, ${sqlStr(season)})`
+        `${indent}  (${matchUuidExpr}, ${matchIdExpr}, ${p.teamId}, ${p.id}, ${sqlStr(p.name)}, ${p.rating}, ${competitionId}, ${sqlStr(season)}, false)`
     ).join(',\n');
-    return `${indent}INSERT INTO match_player_ratings (match_uuid, match_id, league_team_id, player_id, player_name, rating, competition_id, season)
+    // ON CONFLICT porque el trigger de rating sintético (recompute_synthetic_rating)
+    // puede haber creado ya una fila para un goleador al insertarse goal_events
+    // (que va antes en este mismo script) - la rating real gana siempre.
+    return `${indent}INSERT INTO match_player_ratings (match_uuid, match_id, league_team_id, player_id, player_name, rating, competition_id, season, is_synthetic)
 ${indent}VALUES
-${values};`;
+${values}
+${indent}ON CONFLICT (match_uuid, league_team_id, player_name)
+${indent}DO UPDATE SET rating = EXCLUDED.rating, player_id = EXCLUDED.player_id, is_synthetic = false;`;
 }

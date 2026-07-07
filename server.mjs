@@ -15,7 +15,7 @@ import jwt from 'jsonwebtoken';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir, chmod, access, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, chmod, access, rm, readdir } from 'node:fs/promises';
 import { constants as fsConstants, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
@@ -100,10 +100,13 @@ async function openDatabase() {
   );
   if (rows.length === 0) {
     console.log('[liga-offline] Base de datos nueva, aplicando schema...');
-    const schemaSql = await readFile(path.join(ROOT, 'supabase/schema/spike.sql'), 'utf8');
-    const rolesSql = await readFile(path.join(ROOT, 'supabase/schema/roles.sql'), 'utf8');
-    await db.exec(schemaSql);
-    await db.exec(rolesSql);
+    const schemaDir = path.join(ROOT, 'supabase/schema');
+    const files = (await readdir(schemaDir)).filter((f) => f.endsWith('.sql')).sort();
+    for (const f of files) {
+      const sql = await readFile(path.join(schemaDir, f), 'utf8');
+      await db.exec(sql);
+      console.log(`[liga-offline]   ${f} aplicado`);
+    }
     console.log('[liga-offline] Schema aplicado.');
   }
   return db;
