@@ -84,9 +84,10 @@ async function redirectToCompetitionSelection(returnPage) {
   
   document.body.appendChild(message);
   
-  // Redirigir después de un breve delay
+  // Redirigir después de un breve delay. Offline el home es index.html
+  // (no existe competitions.html → daría 404).
   setTimeout(() => {
-    redirectTo('competitions.html');
+    redirectTo('index.html');
   }, 1500);
 }
 
