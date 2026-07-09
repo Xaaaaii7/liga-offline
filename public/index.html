@@ -7,29 +7,34 @@
   <title>Liga offline</title>
   <script src="js/theme-preload.js"></script>
   <link rel="stylesheet" href="css/style.css" />
-  <style>
-    .idx-comp-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border, #333); }
-    .idx-comp-meta { color: var(--muted); font-size: 0.9em; }
-    .idx-comp-actions { display: flex; gap: 8px; }
-    .idx-empty { color: var(--muted); padding: 16px 0; }
-  </style>
+  <link rel="stylesheet" href="css/competitions.css" />
 </head>
 
-<body class="page-index">
+<body class="page-competitions">
   <header class="site-header">
     <img src="img/logo.png" alt="Logo" class="logo" />
     <h1>Liga offline</h1>
     <nav id="main-nav"></nav>
   </header>
 
-  <main class="container" id="index-root">
-    <section class="table-wrap">
-      <h2>Tus competiciones</h2>
-      <div id="lista-competiciones">Cargando…</div>
+  <main class="container competitions-container">
+    <section class="competitions-filters">
+      <div class="filters-row">
+        <h2 style="margin:0">Tus competiciones</h2>
+        <div class="create-competition-section">
+          <a href="crear-competicion.html" class="btn-create-competition">➕ Crear competición</a>
+        </div>
+      </div>
     </section>
 
-    <section class="table-wrap">
-      <a href="crear-competicion.html"><button type="button">+ Crear nueva competición</button></a>
+    <section class="competitions-list-section">
+      <div id="competitions-loading" class="loading-message">
+        <p>Cargando competiciones…</p>
+      </div>
+      <div id="competitions-empty" class="empty-state" style="display:none">
+        <p>Todavía no hay ninguna competición. Crea la primera con el botón de arriba.</p>
+      </div>
+      <div id="competitions-grid" class="comps-grid"></div>
     </section>
   </main>
 

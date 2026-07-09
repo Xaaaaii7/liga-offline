@@ -21,7 +21,7 @@ function generateSlug(text) {
   const clubsPickerEl = document.getElementById('clubs-picker');
   const clubsCountEl = document.getElementById('clubs-count');
 
-  // Autogenerar slug a partir del nombre mientras el usuario no lo toque a mano.
+  // Autogenerar slug desde el nombre mientras el usuario no lo edite a mano.
   let slugTouched = false;
   slugEl.addEventListener('input', () => { slugTouched = true; });
   nameEl.addEventListener('input', () => {
@@ -33,10 +33,12 @@ function generateSlug(text) {
     `<option value="${escapeHtml(s.name)}" ${s.is_active ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
   ).join('');
 
+  // ── Selector de clubes: desplegable por liga + seleccionar liga entera ──
   const { data: clubs, error: clubsErr } = await supabase
     .from('clubs')
-    .select('id, name, short_name, league:leagues(name)')
+    .select('id, name, league:leagues(name)')
     .order('name');
+
   if (clubsErr) {
     clubsPickerEl.innerHTML = `Error cargando clubes: ${escapeHtml(clubsErr.message)}`;
   } else {
@@ -47,29 +49,59 @@ function generateSlug(text) {
       groups.get(leagueName).push(c);
     }
     const sortedLeagues = [...groups.keys()].sort();
-    clubsPickerEl.innerHTML = sortedLeagues.map(leagueName => `
-      <div class="cc-league-group">
-        <h4>${escapeHtml(leagueName)}</h4>
-        <div class="cc-clubs">
-          ${groups.get(leagueName).map(c => `
-            <label class="cc-club-option">
-              <input type="checkbox" name="club" value="${c.id}" />
-              ${escapeHtml(c.name)}
+
+    clubsPickerEl.innerHTML = sortedLeagues.map(leagueName => {
+      const clubsInLeague = groups.get(leagueName);
+      const safeLeague = escapeHtml(leagueName);
+      return `
+        <details class="cc-league">
+          <summary>
+            <label class="checkbox-label" onclick="event.stopPropagation()">
+              <input type="checkbox" class="cc-league-all" data-league="${safeLeague}" />
+              <span>${safeLeague} (${clubsInLeague.length})</span>
             </label>
-          `).join('')}
-        </div>
-      </div>
-    `).join('');
+          </summary>
+          <div class="cc-league-clubs">
+            ${clubsInLeague.map(c => `
+              <label class="checkbox-label">
+                <input type="checkbox" name="club" value="${c.id}" data-league="${safeLeague}" data-name="${escapeHtml(c.name)}" />
+                <span>${escapeHtml(c.name)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </details>
+      `;
+    }).join('');
   }
 
   function updateCount() {
     clubsCountEl.textContent = document.querySelectorAll('input[name="club"]:checked').length;
   }
-  clubsPickerEl.addEventListener('change', updateCount);
+
+  function syncLeagueAll(league) {
+    const all = document.querySelector(`.cc-league-all[data-league="${CSS.escape(league)}"]`);
+    if (!all) return;
+    const clubBoxes = [...document.querySelectorAll(`input[name="club"][data-league="${CSS.escape(league)}"]`)];
+    const checked = clubBoxes.filter(cb => cb.checked).length;
+    all.checked = checked === clubBoxes.length && clubBoxes.length > 0;
+    all.indeterminate = checked > 0 && checked < clubBoxes.length;
+  }
+
+  clubsPickerEl.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.classList.contains('cc-league-all')) {
+      const league = t.dataset.league;
+      document.querySelectorAll(`input[name="club"][data-league="${CSS.escape(league)}"]`)
+        .forEach(cb => { cb.checked = t.checked; });
+    } else if (t.name === 'club') {
+      syncLeagueAll(t.dataset.league);
+    }
+    updateCount();
+  });
   updateCount();
 
   function showError(msg) {
-    messagesEl.innerHTML = `<p style="color:var(--danger,#c0392b)">${escapeHtml(msg)}</p>`;
+    messagesEl.innerHTML = `<div class="message message-error">${escapeHtml(msg)}</div>`;
   }
 
   document.getElementById('crear-competicion-form').addEventListener('submit', async (e) => {
@@ -81,36 +113,25 @@ function generateSlug(text) {
     const season = seasonEl.value;
     const selectedClubs = [...document.querySelectorAll('input[name="club"]:checked')].map(cb => ({
       id: Number(cb.value),
-      name: cb.parentElement.textContent.trim(),
+      name: cb.dataset.name,
     }));
 
-    if (!name || !slug || !season) {
-      showError('Faltan campos obligatorios.');
-      return;
-    }
-    if (selectedClubs.length < 2) {
-      showError('Selecciona al menos 2 equipos.');
-      return;
-    }
+    if (!name || !slug || !season) { showError('Faltan campos obligatorios.'); return; }
+    if (selectedClubs.length < 2) { showError('Selecciona al menos 2 equipos.'); return; }
 
     const { data: existing } = await supabase.from('competitions').select('id').eq('slug', slug).maybeSingle();
-    if (existing) {
-      showError(`El slug "${slug}" ya existe. Elige otro nombre.`);
-      return;
-    }
-
-    const pointsWin = parseInt(document.getElementById('points_win').value, 10) || 0;
-    const pointsDraw = parseInt(document.getElementById('points_draw').value, 10) || 0;
-    const pointsLoss = parseInt(document.getElementById('points_loss').value, 10) || 0;
-    const tiebreaker = [...document.querySelectorAll('input[name="tiebreaker"]:checked')].map(cb => cb.value);
+    if (existing) { showError(`El slug "${slug}" ya existe. Elige otro nombre.`); return; }
 
     const typeConfig = {
       format: document.getElementById('league_format').value,
-      points_win: pointsWin,
-      points_draw: pointsDraw,
-      points_loss: pointsLoss,
-      tiebreaker: tiebreaker.length ? tiebreaker : ['points', 'goal_difference', 'goals_for', 'head_to_head'],
+      points_win: parseInt(document.getElementById('points_win').value, 10) || 0,
+      points_draw: parseInt(document.getElementById('points_draw').value, 10) || 0,
+      points_loss: parseInt(document.getElementById('points_loss').value, 10) || 0,
+      tiebreaker: [...document.querySelectorAll('input[name="tiebreaker"]:checked')].map(cb => cb.value),
     };
+    if (!typeConfig.tiebreaker.length) {
+      typeConfig.tiebreaker = ['points', 'goal_difference', 'goals_for', 'head_to_head'];
+    }
 
     const { data: competition, error: compErr } = await supabase
       .from('competitions')
@@ -123,19 +144,13 @@ function generateSlug(text) {
       .select('id, slug')
       .single();
 
-    if (compErr) {
-      showError(`Error creando la competición: ${compErr.message}`);
-      return;
-    }
+    if (compErr) { showError(`Error creando la competición: ${compErr.message}`); return; }
 
     const leagueTeamsRows = selectedClubs.map(c => ({
-      season, club_id: c.id, nickname: c.name.slice(0, 20), competition_id: competition.id,
+      season, club_id: c.id, nickname: (c.name || '').slice(0, 20), competition_id: competition.id,
     }));
     const { error: teamsErr } = await supabase.from('league_teams').insert(leagueTeamsRows);
-    if (teamsErr) {
-      showError(`Competición creada pero falló al crear los equipos: ${teamsErr.message}`);
-      return;
-    }
+    if (teamsErr) { showError(`Competición creada pero falló al crear los equipos: ${teamsErr.message}`); return; }
 
     window.location.href = `configurar-competicion.html?comp=${encodeURIComponent(competition.slug)}`;
   });

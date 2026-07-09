@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Clasificación</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/bracket.css" />
+</head>
+
+<body class="page-clasificacion">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1>Clasificación</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container">
+    <div id="bracket-container" style="display: none;"></div>
+
+    <div class="clasificacion-layout" id="clasificacion-layout">
+      <div class="clasificacion-main">
+        <div class="table-wrap" id="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Equipo</th>
+                <th>PJ</th>
+                <th>G</th>
+                <th>E</th>
+                <th>P</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DG</th>
+                <th>Pts</th>
+                <th class="col-forma">Forma</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-clasificacion"></tbody>
+          </table>
+        </div>
+      </div>
+      <aside class="clasificacion-aside" id="clasificacion-aside">
+        <p class="muted">Cargando lateral…</p>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Modal historial de equipo -->
+  <div id="team-backdrop" class="modal-backdrop" hidden>
+    <div class="modal team-modal" role="dialog" aria-modal="true" aria-labelledby="team-modal-title">
+      <button class="modal-close" id="team-modal-close" aria-label="Cerrar">✕</button>
+
+      <header class="team-modal-header">
+        <div class="team-modal-main">
+          <img id="team-modal-badge" class="team-badge-large" src="" alt="" />
+          <div>
+            <h2 id="team-modal-title"></h2>
+            <p id="team-modal-summary" class="team-modal-summary"></p>
+          </div>
+        </div>
+        <p id="team-modal-meta" class="team-modal-meta"></p>
+      </header>
+
+      <!-- NUEVO: histórico de posición -->
+      <div id="team-modal-poshistory" class="team-modal-poshistory">
+        <!-- se rellena por JS -->
+      </div>
+
+      <div id="team-modal-matches" class="team-modal-matches">
+        <!-- aquí se inyecta la lista de partidos -->
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/clasificacion.js"></script>
+</body>
+
+</html>

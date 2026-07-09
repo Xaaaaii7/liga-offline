@@ -15,7 +15,7 @@
 import { getSupabaseClient } from './supabase-client.js';
 import { slugify, normalizeText } from './utils.js';
 
-const STORAGE_KEY = 'managerCrestMap.v3';
+const STORAGE_KEY = 'managerCrestMap.offline.v1';
 const STORAGE_TTL_MS = 10 * 60 * 1000; // 10 min
 
 let inMemoryState = null;
@@ -46,18 +46,16 @@ function writeToSession(state) {
 }
 
 async function fetchState() {
+  // liga-offline: no hay `users`/`user_season_clubs` (sistema de managers
+  // excluido). El "escudo del equipo" es el crest del club del `league_team`
+  // (clubs.crest_url, ya apuntando a un fichero local tras import-crests.mjs).
+  // Mapa keyed por nickname del league_team → crest por temporada.
   const supabase = await getSupabaseClient();
 
-  const [{ data: users, error: usersErr }, { data: seasonsRows, error: seasonsErr }] = await Promise.all([
+  const [{ data: teams, error: teamsErr }, { data: seasonsRows, error: seasonsErr }] = await Promise.all([
     supabase
-      .from('users')
-      .select(`
-        nickname,
-        user_season_clubs(
-          season,
-          club:clubs(crest_url)
-        )
-      `),
+      .from('league_teams')
+      .select('nickname, display_name, season, club:clubs(crest_url)'),
     supabase
       .from('seasons')
       .select('name, is_active')
@@ -65,28 +63,30 @@ async function fetchState() {
       .limit(1)
   ]);
 
-  if (usersErr || !Array.isArray(users)) {
+  if (teamsErr || !Array.isArray(teams)) {
     return { activeSeason: null, map: {} };
   }
 
   const activeSeason = (!seasonsErr && seasonsRows && seasonsRows[0]?.name) || null;
 
   const map = {};
-  for (const u of users) {
-    if (!u.nickname) continue;
-    const rows = (u.user_season_clubs || [])
-      .filter(r => r?.club?.crest_url && r.season)
-      // Orden ascendente por season para que findLast funcione
-      .sort((a, b) => String(a.season).localeCompare(String(b.season)));
-    if (!rows.length) continue;
-
-    const bySeason = {};
-    const seasonsAsc = [];
-    for (const r of rows) {
-      bySeason[r.season] = r.club.crest_url;
-      seasonsAsc.push({ season: r.season, crest: r.club.crest_url });
-    }
-    map[keyFor(u.nickname)] = { bySeason, seasonsAsc };
+  const addName = (name, season, crest) => {
+    if (!name || !season || !crest) return;
+    const key = keyFor(name);
+    if (!map[key]) map[key] = { bySeason: {}, seasonsAsc: [] };
+    map[key].bySeason[season] = crest;
+  };
+  for (const t of teams) {
+    const crest = t?.club?.crest_url;
+    if (!crest || !t.season) continue;
+    // Indexar por nickname y por display_name (las páginas usan uno u otro).
+    addName(t.nickname, t.season, crest);
+    addName(t.display_name, t.season, crest);
+  }
+  for (const key of Object.keys(map)) {
+    map[key].seasonsAsc = Object.entries(map[key].bySeason)
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+      .map(([season, crest]) => ({ season, crest }));
   }
   return { activeSeason, map };
 }

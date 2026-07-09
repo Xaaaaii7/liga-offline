@@ -5,6 +5,7 @@ import {
 } from './utils.js';
 
 import { getCrestOrLogo } from './manager-crests.js';
+import { getSupabaseClient } from './supabase-client.js';
 
 // URL safe para usar en href: rechaza javascript: / data: / vbscript:.
 const safeUrl = (url) => {
@@ -23,13 +24,14 @@ import {
     fetchWeatherForCity
 } from './resultados-utils.js';
 
+// liga-offline: sin subida de foto por OCR (lambda AWS) ni streaming Twitch.
 const MATCH_UPLOAD = {
-    enabled: true,
+    enabled: false,
     presignEndpoint: 'https://d39ra5ecf4.execute-api.eu-west-1.amazonaws.com/prod/presign-match-upload'
 };
 
 export const STREAM_START = {
-    enabled: true,
+    enabled: false,
     liveChannelUrl: 'https://d39ra5ecf4.execute-api.eu-west-1.amazonaws.com/prod/live-channel',
     startStreamEndpoint: 'https://d39ra5ecf4.execute-api.eu-west-1.amazonaws.com/prod/start-stream'
 };
@@ -89,26 +91,31 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
     // Slug de competición para links de apuestas (comp de la URL actual)
     const compSlugForLinks = new URLSearchParams(window.location.search).get('comp') || '';
 
-    // Cargar índice de stats y canales en directo en paralelo
+    // Cargar índice de stats + set de equipos controlados por humano.
+    // Offline: sin quiniela (manager-predictions) ni canales Twitch en directo.
     const competitionId = partidos[0]?.competition_id || null;
     let statsIndex = {};
-    let liveChannels = new Set();
-    let predsSummary = new Map();
+    const liveChannels = new Set();
+    const predsSummary = new Map();
+    let humanTeamIds = new Set();
     try {
-        const matchUuids = partidos.map(p => p.match_uuid).filter(Number.isFinite);
-        const predsModPromise = matchUuids.length
-            ? import('./manager-predictions-data.js').then(m => m.loadPredictionsSummaryForMatches(matchUuids)).catch(() => new Map())
-            : Promise.resolve(new Map());
-        const [si, lc, ps] = await Promise.all([
+        const [si, humans] = await Promise.all([
             ensureStatsIndex(competitionId).catch(() => ({})),
-            fetchLiveChannelsSet().catch(() => new Set()),
-            predsModPromise,
+            (async () => {
+                if (!competitionId) return new Set();
+                const supa = await getSupabaseClient();
+                const { data } = await supa
+                    .from('league_teams')
+                    .select('id, is_human_controlled')
+                    .eq('competition_id', competitionId)
+                    .eq('is_human_controlled', true);
+                return new Set((data || []).map(t => t.id));
+            })().catch(() => new Set()),
         ]);
         statsIndex = si;
-        liveChannels = lc;
-        predsSummary = ps;
+        humanTeamIds = humans;
     } catch (err) {
-        console.warn('Error cargando stats/live/preds:', err);
+        console.warn('Error cargando stats/equipos humanos:', err);
     }
 
     const cardsHtml = partidos.map((p, idx) => {
@@ -184,6 +191,14 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
                Iniciar stream
              </button>
            </div>`
+            : '';
+
+        // liga-offline: en un partido no jugado de un equipo humano, botón para
+        // registrar el resultado a mano (entrar-resultado.html). Los partidos
+        // IA-vs-IA se resolverán con el botón "simular jornada" (pendiente).
+        const esHumano = humanTeamIds.has(p.local_team_id) || humanTeamIds.has(p.visitante_team_id);
+        const registrarHTML = (!jugado && esHumano && p.match_uuid)
+            ? `<a class="btn btn-sm btn-primary result-registrar" href="entrar-resultado.html?match=${p.match_uuid}&comp=${encodeURIComponent(compSlugForLinks)}" onclick="event.stopPropagation()">Registrar resultado</a>`
             : '';
 
         const cityName = getCityForKey(p.local);
@@ -322,8 +337,8 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
           ${(meteoPlaceholder || arbitroChip || predsPillHTML)
             ? `<div class="result-row-extras">${meteoPlaceholder}${arbitroChip}${predsPillHTML}</div>`
             : ''}
-          ${uploadHTML || resultEditScoreHTML || streamStartHTML
-            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}</div>`
+          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML
+            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}</div>`
             : ''}
         </article>
       `;

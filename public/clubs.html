@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Clubs</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="page-clubs">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1>Clubs</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container">
+    <section class="clubs-header">
+      <h2>Todos los equipos</h2>
+      <p class="clubs-sub">Entra en cada club para ver plantilla, resultados, vídeos y estadísticas.</p>
+    </section>
+
+    <section id="clubs-grid" class="clubs-grid">
+      <p style="color:var(--muted)">Cargando clubs...</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/clubs.js"></script>
+</body>
+
+</html>

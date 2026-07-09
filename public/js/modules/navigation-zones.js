@@ -6,7 +6,8 @@
 export const NAVIGATION_ZONES = {
   GLOBAL: {
     name: 'GLOBAL',
-    pages: ['index.html', 'competitions.html', 'dashboard.html', 'login.html', 'register.html', 'reset-password.html', 'palmares.html', 'estadisticas-globales.html', 'jugadores-globales.html', 'pichichi-globales.html', 'noticias-globales.html', 'managers.html', 'manager.html', 'entidades.html', 'entidad.html', 'jugador.html', 'selecciones.html', 'seleccion.html', 'arbitros.html', 'arbitro.html', 'periodistas.html', 'periodista.html', 'comunicados.html'],
+    // liga-offline: home + crear competición (sin contexto de competición).
+    pages: ['index.html', 'crear-competicion.html'],
     requiresComp: false,
     allowComp: false,
     description: 'Páginas globales que no requieren contexto de competición'
@@ -14,23 +15,16 @@ export const NAVIGATION_ZONES = {
   COMPETITION: {
     name: 'COMPETITION',
     pages: [
-      'liga.html',
+      'club.html',
+      'estadisticas.html',
+      'configurar-competicion.html',
+      'entrar-resultado.html',
       'clasificacion.html',
       'resultados.html',
-      'partido.html',
-      'jornada.html',
-      'club.html',
-      'pichichi.html',
       'clubs.html',
       'jugadores.html',
-      'noticias.html',
-      'reglas.html',
-      'directos.html',
-      'estadisticas.html',
-      'competicion-palmares.html',
-      'calculadora.html',
-      'quiniela.html',
-      'sorteo.html'
+      'pichichi.html',
+      'jornada.html'
     ],
     requiresComp: true,
     allowComp: true,

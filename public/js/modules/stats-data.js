@@ -69,7 +69,6 @@ const loadResultadosFromSupabase = async (competitionId = null) => {
         competition_id,round_type,resolved_administratively,match_uuid,
         bracket_type,cup_leg,
         home_league_team_id,away_league_team_id,
-        round:rounds!matches_round_id_fkey(id,number,name),
         home:league_teams!matches_home_league_team_id_fkey(
           id,nickname,display_name,penalty_points,penalty_reason,club:clubs(id,name)
         ),

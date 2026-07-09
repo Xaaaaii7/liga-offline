@@ -4,15 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Liga offline — Jornada</title>
+  <title>Liga offline — Lo mejor de la jornada</title>
   <script src="js/theme-preload.js"></script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 
-<body class="page-jornada-offline">
+<body class="page-jornada">
   <header class="site-header">
     <img src="img/logo.png" alt="Logo" class="logo" />
-    <h1 id="jornada-title">Jornada</h1>
+    <h1 id="jornada-title">Lo mejor de la jornada</h1>
     <nav id="main-nav"></nav>
   </header>
 
@@ -20,31 +20,19 @@
     <div id="breadcrumb"></div>
 
     <div class="ritmo-controls">
-      <button type="button" id="btn-jornada-prev">‹ Anterior</button>
+      <button type="button" id="btn-jornada-prev" class="btn btn-sm">‹ Anterior</button>
       <span id="jornada-numero"></span>
-      <button type="button" id="btn-jornada-next">Siguiente ›</button>
+      <button type="button" id="btn-jornada-next" class="btn btn-sm">Siguiente ›</button>
     </div>
 
-    <section class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Local</th>
-            <th>Marcador</th>
-            <th>Visitante</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-partidos"></tbody>
-      </table>
-    </section>
+    <div id="bestxi-mount"></div>
   </main>
 
   <footer class="site-footer">Liga offline</footer>
 
   <script type="module" src="js/loader.js"></script>
   <script type="module" src="js/core-loader.js"></script>
-  <script type="module" src="js/liga/jornada-offline.js"></script>
+  <script type="module" src="js/liga/jornada.js"></script>
 </body>
 
 </html>

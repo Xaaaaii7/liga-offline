@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Resultados</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="page-resultados">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1>Resultados</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <!-- Botón para crear partidos (solo ranked) -->
+  <div id="create-match-container" class="create-match-container" hidden>
+    <button id="create-match-btn" class="btn-primary create-match-btn">➕ Crear nuevo partido</button>
+  </div>
+
+  <main class="container" id="resultados"></main>
+
+  <!-- Modal para crear partido (ranked) -->
+  <div id="create-match-modal" class="modal-backdrop" hidden>
+    <div class="modal modal-form" role="dialog" aria-modal="true" aria-labelledby="create-match-title">
+      <button class="modal-close" id="create-match-close" aria-label="Cerrar">✕</button>
+      <h2 id="create-match-title" class="modal-form-title">Crear nuevo partido</h2>
+      <form id="create-match-form" class="modal-form-body">
+        <div class="modal-form-group">
+          <label for="home-team-select">Equipo local</label>
+          <select id="home-team-select" required>
+            <option value="">Selecciona equipo…</option>
+          </select>
+        </div>
+        <div class="modal-form-group">
+          <label for="away-team-select">Equipo visitante</label>
+          <select id="away-team-select" required>
+            <option value="">Selecciona equipo…</option>
+          </select>
+        </div>
+        <div class="modal-form-actions">
+          <button type="button" class="btn-secondary" id="cancel-create-match">Cancelar</button>
+          <button type="submit" class="btn-primary">Crear partido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Iniciar stream (elegir canal en directo) -->
+  <div id="stream-start-backdrop" class="modal-backdrop" hidden>
+    <div class="modal modal-form" role="dialog" aria-modal="true" aria-labelledby="stream-start-title">
+      <button class="modal-close" id="stream-start-close" aria-label="Cerrar">✕</button>
+      <h2 id="stream-start-title" class="modal-form-title">Iniciar stream</h2>
+      <p class="modal-form-hint">Selecciona tu canal en directo para vincularlo a este partido.</p>
+      <div id="stream-start-list" class="modal-form-list"></div>
+      <div class="modal-form-actions">
+        <button type="button" class="btn-secondary" id="stream-start-cancel">Cancelar</button>
+        <button type="button" id="stream-start-accept" class="btn-primary" disabled>Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/resultados.js"></script>
+</body>
+
+</html>

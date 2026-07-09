@@ -5,6 +5,13 @@ import { renderCompetitionSelector } from './competition-selector.js';
 import { getCurrentPageName, getPageZone } from './navigation-zones.js';
 
 export async function renderUserSection() {
+    // liga-offline no tiene auth (un solo jugador local): no se pinta la
+    // sección de usuario (Login / Mi Perfil / Dashboard / Logout) del original.
+    return;
+}
+
+// eslint-disable-next-line no-unused-vars
+async function _renderUserSectionOnline() {
     const header = document.querySelector('.site-header');
     if (!header) return;
 
@@ -144,112 +151,40 @@ export async function initNavigation() {
             zonePages: currentZone.pages
         });
 
+        // ── Nav de liga-offline ──────────────────────────────────────────
+        // Menú recortado: solo páginas que existen en la app offline. El
+        // original tenía Noticias/Periodistas/Quiniela/En directo/etc.
+        // (sistemas excluidos) — aquí se quedan fuera. Dentro de una
+        // competición se mantiene el ?comp= vía buildURLWithCompetition (más
+        // abajo), que respeta la lista de páginas globales sin comp.
         if (isGlobalPage) {
-            // Menú para páginas globales (fuera de competición)
-            // Dashboard tiene un menú especial sin Palmarés ni Estadísticas
-            if (currentPage === 'dashboard.html') {
-                // Dashboard tiene un menú especial
-                links = [
-                    ['index.html', 'Inicio'],
-                    ['competitions.html', 'Competiciones']
-                ];
-            } else {
-                // Páginas globales — menú reducido con dropdown Stats
-                links = [
-                    ['index.html', 'Inicio'],
-                    {
-                        type: 'dropdown',
-                        label: 'Competiciones',
-                        items: [
-                            ['competitions.html', 'Listado'],
-                            ['arbitros.html', 'Árbitros']
-                        ]
-                    },
-                    {
-                        type: 'dropdown',
-                        label: 'Noticias',
-                        items: [
-                            ['noticias-globales.html', 'Noticias'],
-                            ['comunicados.html', 'Comunicados'],
-                            ['periodistas.html', 'Periodistas']
-                        ]
-                    },
-                    ['managers.html', 'Managers'],
-                    ['entidades.html', 'Clubes'],
-                    ['selecciones.html', 'Selecciones'],
-                    {
-                        type: 'dropdown',
-                        label: 'Stats',
-                        items: [
-                            ['estadisticas-globales.html', 'Jugadores'],
-                            ['jugadores-globales.html', 'Equipos'],
-                            ['pichichi-globales.html', 'Pichichi'],
-                            ['palmares.html', 'Palmarés']
-                        ]
-                    }
-                ];
-            }
+            // Home / crear competición (sin contexto de competición).
+            links = [
+                ['index.html', 'Inicio'],
+                ['crear-competicion.html', 'Crear competición']
+            ];
         } else {
-            // Menú para páginas de liga (clasificacion, resultados, etc.)
-            // Verificar si es una página de liga por el nombre del archivo
-            const ligaPages = ['liga.html', 'clasificacion.html', 'resultados.html', 'jornada.html', 'club.html',
-                'pichichi.html', 'clubs.html', 'jugadores.html', 'noticias.html',
-                'reglas.html', 'directos.html', 'competicion-palmares.html', 'estadisticas.html', 'partido.html',
-                'calculadora.html', 'quiniela.html'];
-            const isLigaPage = ligaPages.includes(currentPage);
-
-            if (isLigaPage) {
-                // Páginas de competición — nav reducida (sprint UX 1)
-                // Inicio · Clasificación · Partidos ▾ · Clubs · Stats ▾ · Más ▾
-                links = [
-                    ['liga.html', 'Inicio'],
-                    ['clasificacion.html', 'Clasificación'],
-                    {
-                        type: 'dropdown',
-                        label: 'Partidos',
-                        items: [
-                            ['resultados.html', 'Resultados'],
-                            ['directos.html', 'En directo'],
-                            ['quiniela.html', 'Quiniela']
-                        ]
-                    },
-                    ['clubs.html', 'Clubs'],
-                    {
-                        type: 'dropdown',
-                        label: 'Stats',
-                        items: [
-                            ['estadisticas.html', 'Jugadores'],
-                            ['jugadores.html', 'Equipos'],
-                            ['pichichi.html', 'Pichichi'],
-                            ['jornada.html', 'Lo mejor de la jornada'],
-                            ['competicion-palmares.html', 'Palmarés']
-                        ]
-                    },
-                    {
-                        type: 'dropdown',
-                        label: 'Noticias',
-                        items: [
-                            ['noticias.html', 'Noticias'],
-                            ['comunicados.html', 'Comunicados'],
-                            ['periodistas.html', 'Periodistas']
-                        ]
-                    },
-                    {
-                        type: 'dropdown',
-                        label: 'Más',
-                        items: [
-                            ['reglas.html', 'Reglas'],
-                            ['calculadora.html', 'Calculadora']
-                        ]
-                    }
-                ];
-            } else {
-                // Menú para otras páginas (admin, login, register, etc.)
-                links = [
-                    ['index.html', 'Inicio'],
-                    ['competitions.html', 'Competiciones']
-                ];
-            }
+            // Dentro de una competición — réplica de la nav real, recortada a
+            // las páginas que existen offline (fuera Noticias/Directos/Quiniela/
+            // Calculadora/Palmarés/managers). buildURLWithCompetition (abajo)
+            // mantiene el ?comp= salvo en index.html.
+            links = [
+                ['index.html', 'Inicio'],
+                ['clasificacion.html', 'Clasificación'],
+                ['resultados.html', 'Partidos'],
+                ['clubs.html', 'Clubs'],
+                {
+                    type: 'dropdown',
+                    label: 'Stats',
+                    items: [
+                        ['estadisticas.html', 'Jugadores'],
+                        ['jugadores.html', 'Equipos'],
+                        ['pichichi.html', 'Pichichi'],
+                        ['jornada.html', 'Lo mejor de la jornada']
+                    ]
+                },
+                ['configurar-competicion.html', 'Configurar']
+            ];
         }
 
         // Construir los enlaces, manteniendo el parámetro comp si existe

@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Pichichi (Jugadores)</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="page-pichichi">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1>Pichichi</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container">
+    <!-- HERO DEL MÁXIMO GOLEADOR -->
+    <section id="pichichi-hero" class="pichichi-hero" aria-live="polite"></section>
+
+    <section class="table-wrap pichichi-table-wrap">
+      <h2>Top goleadores</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>G</th>
+            <th>G/PJ</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-pichichi-jug"></tbody>
+      </table>
+
+      <!-- Mensajes (errores, info) -->
+      <p id="pichichi-msg" style="text-align:center;color:#9fb3c8;margin-top:8px"></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/pichichi.js"></script>
+</body>
+
+</html>

@@ -3,19 +3,23 @@ import { escapeHtml } from '../modules/utils.js';
 
 (async () => {
   const supabase = await getSupabaseClient();
-  const listEl = document.getElementById('lista-competiciones');
+  const gridEl = document.getElementById('competitions-grid');
+  const loadingEl = document.getElementById('competitions-loading');
+  const emptyEl = document.getElementById('competitions-empty');
 
   const { data: competitions, error } = await supabase
     .from('competitions')
-    .select('id, name, slug, season')
+    .select('id, name, slug, season, competition_type, logo_url')
     .order('id', { ascending: false });
 
+  loadingEl.style.display = 'none';
+
   if (error) {
-    listEl.innerHTML = `<p>Error cargando competiciones: ${escapeHtml(error.message)}</p>`;
+    gridEl.innerHTML = `<p>Error cargando competiciones: ${escapeHtml(error.message)}</p>`;
     return;
   }
   if (!competitions.length) {
-    listEl.innerHTML = '<p class="idx-empty">Todavía no hay ninguna competición. Crea la primera abajo.</p>';
+    emptyEl.style.display = 'block';
     return;
   }
 
@@ -25,48 +29,70 @@ import { escapeHtml } from '../modules/utils.js';
       .select('id', { count: 'exact', head: true })
       .eq('competition_id', comp.id);
 
-    let continueHref = `configurar-competicion.html?comp=${encodeURIComponent(comp.slug)}`;
-    let continueLabel = 'Configurar / generar calendario';
+    const { count: totalMatches } = await supabase
+      .from('matches')
+      .select('match_uuid', { count: 'exact', head: true })
+      .eq('competition_id', comp.id);
 
-    if (teamCount > 0) {
-      const { data: pending } = await supabase
-        .from('matches')
-        .select('round_id')
-        .eq('competition_id', comp.id)
-        .or('home_goals.is.null,away_goals.is.null')
-        .not('round_id', 'is', null)
-        .order('round_id', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+    const { count: playedMatches } = await supabase
+      .from('matches')
+      .select('match_uuid', { count: 'exact', head: true })
+      .eq('competition_id', comp.id)
+      .not('home_goals', 'is', null)
+      .not('away_goals', 'is', null);
 
-      if (pending?.round_id != null) {
-        continueHref = `jornada-offline.html?comp=${encodeURIComponent(comp.slug)}&jornada=${pending.round_id}`;
-        continueLabel = `Ir a jornada ${pending.round_id}`;
-      } else {
-        const { count: matchCount } = await supabase
-          .from('matches')
-          .select('match_uuid', { count: 'exact', head: true })
-          .eq('competition_id', comp.id);
-        if (matchCount > 0) {
-          continueHref = `jornada-offline.html?comp=${encodeURIComponent(comp.slug)}&jornada=1`;
-          continueLabel = 'Temporada completa — ver jornadas';
-        }
-      }
-    }
+    // "Acceder" entra a la competición (landing = clasificación) si ya hay
+    // calendario; si no, lleva a configurar para generarlo primero.
+    const hasCalendar = (totalMatches ?? 0) > 0;
+    const accederHref = hasCalendar
+      ? `clasificacion.html?comp=${encodeURIComponent(comp.slug)}`
+      : `configurar-competicion.html?comp=${encodeURIComponent(comp.slug)}`;
 
-    return { comp, teamCount: teamCount ?? 0, continueHref, continueLabel };
+    return { comp, teamCount: teamCount ?? 0, total: totalMatches ?? 0, played: playedMatches ?? 0, accederHref };
   }));
 
-  listEl.innerHTML = cards.map(({ comp, teamCount, continueHref, continueLabel }) => `
-    <div class="idx-comp-card">
-      <div>
-        <strong>${escapeHtml(comp.name)}</strong>
-        <div class="idx-comp-meta">${escapeHtml(comp.season)} · ${teamCount} equipos</div>
-      </div>
-      <div class="idx-comp-actions">
-        <a href="estadisticas.html?comp=${encodeURIComponent(comp.slug)}"><button type="button">Stats</button></a>
-        <a href="${continueHref}"><button type="button">${escapeHtml(continueLabel)}</button></a>
-      </div>
-    </div>
-  `).join('');
+  const typeLabels = { league: 'Liga', cup: 'Copa', mixed: 'Mixta', ranked: 'Ranked' };
+
+  gridEl.innerHTML = cards.map(({ comp, teamCount, total, played, accederHref }) => {
+    const completion = total > 0 ? Math.round((played / total) * 100) : 0;
+    const logoSrc = comp.logo_url || 'img/logo.png';
+    const typeBadge = `<span class="comp-card__badge">${escapeHtml(typeLabels[comp.competition_type] || comp.competition_type)}</span>`;
+    const seasonBadge = comp.season ? `<span class="comp-card__badge">${escapeHtml(comp.season)}</span>` : '';
+
+    return `
+      <article class="comp-card" data-competition-id="${comp.id}">
+        <div class="comp-card__head">
+          <img class="comp-card__logo" src="${escapeHtml(logoSrc)}" alt="" onerror="this.src='img/logo.png'">
+          <div class="comp-card__title">
+            <h3 class="comp-card__name">${escapeHtml(comp.name)}</h3>
+            <div class="comp-card__badges">${typeBadge}${seasonBadge}</div>
+          </div>
+        </div>
+
+        <div class="comp-card__kpis">
+          <div class="comp-card__kpi">
+            <div class="comp-card__kpi-value comp-card__kpi-value--accent">${teamCount}</div>
+            <div class="comp-card__kpi-label">Equipos</div>
+          </div>
+          <div class="comp-card__kpi">
+            <div class="comp-card__kpi-value">${played}<span style="opacity:.45">/${total}</span></div>
+            <div class="comp-card__kpi-label">Partidos</div>
+          </div>
+          <div class="comp-card__kpi">
+            <div class="comp-card__kpi-value">${completion}%</div>
+            <div class="comp-card__kpi-label">Completado</div>
+          </div>
+        </div>
+
+        <div class="comp-card__progress" aria-hidden="true">
+          <div class="comp-card__progress-fill" style="width:${completion}%"></div>
+        </div>
+
+        <div class="comp-card__actions">
+          <a class="btn btn-outline" href="configurar-competicion.html?comp=${encodeURIComponent(comp.slug)}">⚙️ Configurar</a>
+          <a class="btn btn-primary" href="${accederHref}">Acceder</a>
+        </div>
+      </article>
+    `;
+  }).join('');
 })();

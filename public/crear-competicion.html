@@ -7,45 +7,51 @@
   <title>Liga offline — Crear competición</title>
   <script src="js/theme-preload.js"></script>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/competition-management.css" />
   <style>
-    .cc-clubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 16px; }
-    .cc-league-group { margin-bottom: 16px; }
-    .cc-league-group h4 { margin-bottom: 4px; }
-    .cc-club-option { display: flex; align-items: center; gap: 6px; }
-    .cc-count { font-weight: bold; }
+    /* Solo layout del selector de clubes (colores vienen del tema). */
+    .cc-league > summary { cursor: pointer; padding: 8px 0; font-weight: 600; list-style: none; }
+    .cc-league > summary::-webkit-details-marker { display: none; }
+    .cc-league > summary::before { content: '▸'; display: inline-block; width: 1.2em; transition: transform .15s; }
+    .cc-league[open] > summary::before { transform: rotate(90deg); }
+    .cc-league-clubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 16px; padding: 4px 0 10px 1.4em; }
   </style>
 </head>
 
-<body class="page-crear-competicion">
+<body class="page-create-competition">
   <header class="site-header">
     <img src="img/logo.png" alt="Logo" class="logo" />
     <h1>Crear competición</h1>
     <nav id="main-nav"></nav>
   </header>
 
-  <main class="container" id="crear-competicion-root">
+  <main class="container create-competition-container">
     <div id="messages"></div>
 
     <form id="crear-competicion-form">
-      <section class="table-wrap">
+      <section class="form-section">
         <h2>Información básica</h2>
+
         <div class="form-group">
           <label for="name">Nombre de la competición *</label>
           <input type="text" id="name" name="name" required placeholder="Ej: Liga Premier 2026-27" />
         </div>
+
         <div class="form-group">
           <label for="slug">Slug (URL) *</label>
           <input type="text" id="slug" name="slug" required placeholder="liga-premier-2026-27" />
           <small>Se genera automáticamente desde el nombre si se deja vacío.</small>
         </div>
+
         <div class="form-group">
           <label for="season">Temporada *</label>
           <select id="season" name="season" required></select>
         </div>
       </section>
 
-      <section class="table-wrap">
+      <section class="form-section">
         <h2>Configuración de liga</h2>
+
         <div class="form-group">
           <label for="league_format">Formato</label>
           <select id="league_format" name="league_format">
@@ -53,37 +59,42 @@
             <option value="single_round">1 vuelta</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="points_win">Puntos por victoria</label>
-          <input type="number" id="points_win" name="points_win" min="0" value="3" />
+
+        <div class="form-row three-columns">
+          <div class="form-group">
+            <label for="points_win">Puntos por victoria</label>
+            <input type="number" id="points_win" name="points_win" min="0" value="3" />
+          </div>
+          <div class="form-group">
+            <label for="points_draw">Puntos por empate</label>
+            <input type="number" id="points_draw" name="points_draw" min="0" value="1" />
+          </div>
+          <div class="form-group">
+            <label for="points_loss">Puntos por derrota</label>
+            <input type="number" id="points_loss" name="points_loss" min="0" value="0" />
+          </div>
         </div>
-        <div class="form-group">
-          <label for="points_draw">Puntos por empate</label>
-          <input type="number" id="points_draw" name="points_draw" min="0" value="1" />
-        </div>
-        <div class="form-group">
-          <label for="points_loss">Puntos por derrota</label>
-          <input type="number" id="points_loss" name="points_loss" min="0" value="0" />
-        </div>
+
         <div class="form-group">
           <label>Criterios de desempate (orden de prioridad)</label>
-          <div id="tiebreaker-list">
-            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="points" checked /> Puntos</label>
-            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="goal_difference" checked /> Diferencia de goles</label>
-            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="goals_for" checked /> Goles a favor</label>
-            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="head_to_head" checked /> Enfrentamiento directo</label>
+          <div id="tiebreaker" class="tiebreaker-list">
+            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="points" checked /><span>Puntos</span></label>
+            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="goal_difference" checked /><span>Diferencia de goles</span></label>
+            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="goals_for" checked /><span>Goles a favor</span></label>
+            <label class="checkbox-label"><input type="checkbox" name="tiebreaker" value="head_to_head" checked /><span>Enfrentamiento directo</span></label>
           </div>
         </div>
       </section>
 
-      <section class="table-wrap">
-        <h2>Equipos (<span class="cc-count" id="clubs-count">0</span> seleccionados, mínimo 2)</h2>
-        <div id="clubs-picker" class="cc-clubs">Cargando clubes…</div>
+      <section class="form-section">
+        <h2>Equipos (<span id="clubs-count">0</span> seleccionados)</h2>
+        <small>Marca los clubes que jugarán. Puedes seleccionar una liga entera de golpe. Mínimo 2.</small>
+        <div id="clubs-picker">Cargando clubes…</div>
       </section>
 
-      <section class="table-wrap">
-        <button type="submit" id="submit-btn">Crear competición</button>
-      </section>
+      <div class="form-group">
+        <button type="submit" class="btn-submit" id="submit-btn">Crear competición</button>
+      </div>
     </form>
   </main>
 

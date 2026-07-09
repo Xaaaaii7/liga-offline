@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Torneo — Equipos</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="page-jugadores">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1>Equipos</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container" id="jugadores">
+
+    <!-- PESTAÑAS -->
+    <div class="tabs tabs-jugadores">
+      <button type="button" class="active" data-tab="tab-pichichi">Pichichi</button>
+      <button type="button" data-tab="tab-zamora">Zamora</button>
+      <button type="button" data-tab="tab-posesion">Posesión</button>
+      <button type="button" data-tab="tab-fairplay">Juego limpio</button>
+      <button type="button" data-tab="tab-pass">Precisión de pase</button>
+      <button type="button" data-tab="tab-shot">Tiro</button>
+      <button type="button" data-tab="tab-efect">Efectividad defensiva</button>
+      <button data-tab="panel-mvp-jornada">MVP jornada</button>
+    </div>
+
+    <!-- PANEL: PICHICHI -->
+    <section id="tab-pichichi" class="table-wrap tab-panel active">
+      <h2>Pichichi — Equipos con más goles a favor</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>GF</th>
+            <th>GF/PJ</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-pichichi"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: ZAMORA -->
+    <section id="tab-zamora" class="table-wrap tab-panel">
+      <h2>Zamora — Equipos con menos goles en contra</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>GC</th>
+            <th>GC/PJ</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-zamora"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: POSESIÓN -->
+    <section id="tab-posesion" class="table-wrap tab-panel">
+      <h2>Posesión — media por partido (equipos)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ con datos</th>
+            <th>Posesión media</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-posesion-eq"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: FAIR PLAY -->
+    <section id="tab-fairplay" class="table-wrap tab-panel">
+      <h2>Juego limpio — índice (más alto, mejor)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ con datos</th>
+            <th>Entradas</th>
+            <th>Faltas</th>
+            <th>Rojas</th>
+            <th>Índice</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-fairplay-eq"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: PASE -->
+    <section id="tab-pass" class="table-wrap tab-panel">
+      <h2>Precisión de pase — media</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ con datos</th>
+            <th>Pases</th>
+            <th>Completados</th>
+            <th>Accuracy</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-pass-eq"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: TIRO -->
+    <section id="tab-shot" class="table-wrap tab-panel">
+      <h2>Estadísticas de tiro</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ con datos</th>
+            <th>Tiros</th>
+            <th>T a puerta</th>
+            <th>Goles</th>
+            <th>P.T.</th>
+            <th>C.G.</th>
+            <th>Indice</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-shot-eq"></tbody>
+      </table>
+    </section>
+
+    <!-- PANEL: EFECTIVIDAD DEFENSIVA -->
+    <section id="tab-efect" class="table-wrap tab-panel">
+      <h2>Efectividad Defensiva</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PJ con datos</th>
+            <th>Goles encajados</th>
+            <th>T a puerta rival</th>
+            <th>% acierto rival</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-efect-rival"></tbody>
+      </table>
+    </section>
+    <section id="panel-mvp-jornada" class="tab-panel">
+      <div class="table-wrap">
+        <h2>MVP temporada — Ranking por equipo</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Equipo</th>
+              <th>Jornadas con datos</th>
+              <th>PJ totales</th>
+              <th>GF</th>
+              <th>GC</th>
+              <th>MVP medio</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-mvp-jornada"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">© Torneo entre amigos</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/jugadores.js"></script>
+</body>
+
+</html>
