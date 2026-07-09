@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liga offline</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .idx-comp-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border, #333); }
+    .idx-comp-meta { color: var(--muted); font-size: 0.9em; }
+    .idx-comp-actions { display: flex; gap: 8px; }
+    .idx-empty { color: var(--muted); padding: 16px 0; }
+  </style>
+</head>
+
+<body class="page-index">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo" class="logo" />
+    <h1>Liga offline</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container" id="index-root">
+    <section class="table-wrap">
+      <h2>Tus competiciones</h2>
+      <div id="lista-competiciones">Cargando…</div>
+    </section>
+
+    <section class="table-wrap">
+      <a href="crear-competicion.html"><button type="button">+ Crear nueva competición</button></a>
+    </section>
+  </main>
+
+  <footer class="site-footer">Liga offline</footer>
+
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/index-home.js"></script>
+</body>
+
+</html>
