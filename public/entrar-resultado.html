@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liga offline — Entrar resultado</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .er-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .er-score { display: flex; align-items: center; gap: 12px; font-size: 1.4em; }
+    .er-score input { width: 4em; text-align: center; font-size: 1em; }
+    .er-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+    .er-stats-grid label { font-size: 0.85em; color: var(--muted); }
+    .er-stats-grid input { width: 100%; }
+    .er-player-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .er-player-row span { flex: 1; }
+    .er-player-row input { width: 4.5em; }
+    .er-add-row { display: flex; gap: 8px; margin: 8px 0; align-items: center; }
+    .er-add-row select { flex: 1; }
+    .er-add-row input { width: 5em; }
+    .er-list-item { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  </style>
+</head>
+
+<body class="page-entrar-resultado">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo" class="logo" />
+    <h1>Entrar resultado</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container" id="entrar-resultado-root">
+    <div id="breadcrumb"></div>
+
+    <section class="table-wrap">
+      <div class="er-score">
+        <span id="home-name">Local</span>
+        <input type="number" id="home-goals" min="0" />
+        <span>-</span>
+        <input type="number" id="away-goals" min="0" />
+        <span id="away-name">Visitante</span>
+      </div>
+    </section>
+
+    <section class="table-wrap er-teams">
+      <div>
+        <h3 id="home-title">Local</h3>
+        <h4>Goleadores</h4>
+        <div class="er-add-row">
+          <select id="home-scorer-select"></select>
+          <input type="number" id="home-scorer-minute" placeholder="min." />
+          <button type="button" id="home-scorer-add">+</button>
+        </div>
+        <div id="home-scorer-list"></div>
+
+        <h4>Tarjetas rojas</h4>
+        <div class="er-add-row">
+          <select id="home-red-select"></select>
+          <input type="number" id="home-red-minute" placeholder="min." />
+          <button type="button" id="home-red-add">+</button>
+        </div>
+        <div id="home-red-list"></div>
+
+        <h4>Tarjetas amarillas</h4>
+        <div class="er-add-row">
+          <select id="home-yellow-select"></select>
+          <input type="number" id="home-yellow-minute" placeholder="min." />
+          <button type="button" id="home-yellow-add">+</button>
+        </div>
+        <div id="home-yellow-list"></div>
+
+        <h4>Stats de equipo</h4>
+        <div class="er-stats-grid" id="home-stats"></div>
+
+        <h4>Valoraciones</h4>
+        <div id="home-ratings"></div>
+      </div>
+
+      <div>
+        <h3 id="away-title">Visitante</h3>
+        <h4>Goleadores</h4>
+        <div class="er-add-row">
+          <select id="away-scorer-select"></select>
+          <input type="number" id="away-scorer-minute" placeholder="min." />
+          <button type="button" id="away-scorer-add">+</button>
+        </div>
+        <div id="away-scorer-list"></div>
+
+        <h4>Tarjetas rojas</h4>
+        <div class="er-add-row">
+          <select id="away-red-select"></select>
+          <input type="number" id="away-red-minute" placeholder="min." />
+          <button type="button" id="away-red-add">+</button>
+        </div>
+        <div id="away-red-list"></div>
+
+        <h4>Tarjetas amarillas</h4>
+        <div class="er-add-row">
+          <select id="away-yellow-select"></select>
+          <input type="number" id="away-yellow-minute" placeholder="min." />
+          <button type="button" id="away-yellow-add">+</button>
+        </div>
+        <div id="away-yellow-list"></div>
+
+        <h4>Stats de equipo</h4>
+        <div class="er-stats-grid" id="away-stats"></div>
+
+        <h4>Valoraciones</h4>
+        <div id="away-ratings"></div>
+      </div>
+    </section>
+
+    <section class="table-wrap">
+      <button type="button" id="btn-guardar-todo">Guardar resultado completo</button>
+      <p id="guardar-status"></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">Liga offline</footer>
+
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/entrar-resultado.js"></script>
+</body>
+
+</html>

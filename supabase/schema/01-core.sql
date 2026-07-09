@@ -112,7 +112,17 @@ CREATE TABLE league_teams (
 CREATE TABLE matches (
   id                        text NOT NULL,
   season                    text NOT NULL,
-  round_id                  integer REFERENCES rounds(id) ON DELETE SET NULL,
+  -- SIN FK real a rounds(id) a propósito: competition-schedule-generator.js
+  -- (generateLeagueSchedule, camino round-robin estándar, sin modificar)
+  -- escribe aquí el número de jornada directamente vía INSERT sin crear
+  -- filas en `rounds` — con la FK puesta, ese INSERT falla siempre (rounds
+  -- vacía). Coincide con lo descrito en la memoria jornada-round-id-vs-number
+  -- ("coincidían por azar en comp 1"). Consecuencia aceptada: las páginas que
+  -- hacen embed `round:rounds!matches_round_id_fkey(...)` (p.ej. algún
+  -- widget de próximo/último partido) reciben 400 de PostgREST porque no
+  -- hay relación de FK que resolver — ya degradan con try/catch, igual que
+  -- el hueco conocido de team_fanbase_state.
+  round_id                  integer,
   home_league_team_id       integer REFERENCES league_teams(id) ON DELETE SET NULL,
   away_league_team_id       integer REFERENCES league_teams(id) ON DELETE SET NULL,
   match_date                date,
