@@ -7,8 +7,67 @@ if (typeof globalThis.WebSocket === 'undefined') {
 
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_CONFIG } from '../public/js/modules/config.js';
+import { CLUB_FORMATIONS } from './club-formations.js';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+
+// ── Táctica: posición → línea, y cuántos jugadores por línea en cada sistema ──
+// (réplica en Node de groupFromPosition de public/js/modules/formation.js, que
+// es un módulo de navegador y no se puede importar aquí sin arrastrar deps).
+const groupFromPosition = (pos) => {
+    const p = (pos || '').toLowerCase();
+    if (p.includes('goalkeeper') || p.includes('portero') || p === 'gk') return 'POR';
+    if (p.includes('defence') || p.includes('back') || p.includes('defensa') ||
+        p === 'cb' || p === 'lb' || p === 'rb') return 'DEF';
+    if (p.includes('midfield') || p.includes('medio') || p === 'mid') return 'MC';
+    if (p.includes('offence') || p.includes('forward') || p.includes('wing') ||
+        p.includes('striker') || p.includes('delantero')) return 'DEL';
+    return null;
+};
+// Reparto de las 10 plazas de campo (el portero es siempre 1) por sistema.
+const SYSTEM_LINES = {
+    '4-4-2': { DEF: 4, MC: 4, DEL: 2 },
+    '4-3-3': { DEF: 4, MC: 3, DEL: 3 },
+    '4-5-1': { DEF: 4, MC: 5, DEL: 1 },
+    '3-5-2': { DEF: 3, MC: 5, DEL: 2 },
+    '4-2-3-1': { DEF: 4, MC: 5, DEL: 1 },
+    '3-4-3': { DEF: 3, MC: 4, DEL: 3 },
+    '4-1-4-1': { DEF: 4, MC: 5, DEL: 1 },
+    '5-3-2': { DEF: 5, MC: 3, DEL: 2 },
+};
+const DEFAULT_SYSTEM = '4-3-3';
+
+// Traduce un sistema (plantilla conocida o cualquier notación "a-b-c[-d]") al
+// reparto DEF/MC/DEL de las 10 plazas de campo. La primera cifra es la defensa,
+// la última los delanteros y el resto (mediocampo) se agrega al centro. Devuelve
+// null si no suma 10 (notación rara → el llamador cae al sistema por defecto).
+const linesForSystem = (system) => {
+    if (SYSTEM_LINES[system]) return SYSTEM_LINES[system];
+    const parts = String(system || '').split('-').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+    if (parts.length >= 3) {
+        const DEF = parts[0];
+        const DEL = parts[parts.length - 1];
+        const MC = parts.slice(1, -1).reduce((a, b) => a + b, 0);
+        if (DEF + MC + DEL === 10) return { DEF, MC, DEL };
+    }
+    return null;
+};
+
+// Infiere el sistema (de entre SYSTEM_LINES) que mejor encaja con la profundidad
+// real de la plantilla: el que menos plazas deja sin cubrir por línea.
+const inferSystem = (players) => {
+    const counts = { DEF: 0, MC: 0, DEL: 0 };
+    for (const p of players) {
+        const g = groupFromPosition(p.position);
+        if (g && counts[g] != null) counts[g]++;
+    }
+    let best = DEFAULT_SYSTEM, bestScore = -Infinity;
+    for (const [sys, lines] of Object.entries(SYSTEM_LINES)) {
+        const deficit = ['DEF', 'MC', 'DEL'].reduce((acc, g) => acc + Math.max(0, lines[g] - counts[g]), 0);
+        if (-deficit > bestScore) { bestScore = -deficit; best = sys; }
+    }
+    return best;
+};
 
 // ─────────────────────────────────────────────────────────────────────
 // Usage:
@@ -274,7 +333,7 @@ const loadSquad = async (clubId, season) => {
         .eq('season', season);
     const ids = (memberships || []).map(m => m.player_id);
     if (!ids.length) return [];
-    const { data: players } = await sb.from('players').select('id, name, position').in('id', ids);
+    const { data: players } = await sb.from('players').select('id, name, position, efootball_overall').in('id', ids);
     return players || [];
 };
 
@@ -451,16 +510,14 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
         .not('away_goals', 'is', null);
     const cleanCompMatches = (allCompMatches || []).filter(m => m.resolved_administratively !== true);
 
-    // Priores globales + shrinkage. CRÍTICO para ligas nuevas que se pueblan
-    // partido a partido: sin esto, las "medias de liga" salen de los pocos
-    // partidos ya jugados de ESTA competición, así que un solo primer 0-0
-    // hace avg_goles=0 → conversión=0 → todos los partidos siguientes 0-0
-    // (espiral). Con shrinkage, con pocos partidos manda el prior; con muchos,
-    // converge a la media real de la competición.
-    const PRIOR_GOALS = 1.3, PRIOR_SHOTS = 11, PRIOR_SOT = 4;
-    const PRIOR_W = 20; // observaciones-prior (~10 partidos)
-    const goalObs = cleanCompMatches.flatMap(m => [m.home_goals, m.away_goals]);
-    const leagueGoalAvg = (sum(goalObs) + PRIOR_GOALS * PRIOR_W) / (goalObs.length + PRIOR_W);
+    // Baseline ABSOLUTA de fútbol (fija, NO auto-referencial). Antes las "medias
+    // de liga" se calculaban de los partidos ya jugados de ESTA competición: en
+    // una liga offline recién poblada, un primer 0-0 bajaba la media → menos
+    // conversión → más 0-0 → espiral hasta el colapso. Ahora el nivel de la liga
+    // es fijo y las diferencias entre equipos vienen de la fuerza por OVR (más
+    // abajo), no de la media auto-referencial. Valores de fútbol real:
+    // ~1.35 goles/equipo, ~12 tiros, ~4.5 a puerta por partido.
+    const leagueGoalAvg = 1.35;
 
     // ─── PPG por equipo (métrica de nivel) ─────────────────────────
     const teamPoints = new Map();
@@ -480,19 +537,11 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
     const leaguePPG = matchesTotal > 0 ? ptsTotal / matchesTotal : 1.3;
     const teamStrength = (teamId) => ppgById[teamId] ?? leaguePPG;
 
-    // ─── Medias de liga para tiros y tiros a puerta ────────────────
-    const { data: allLeagueStats } = await sb
-        .from('match_team_stats')
-        .select('shots, shots_on_target')
-        .eq('competition_id', competitionId);
-    // Mismo shrinkage hacia priores que leagueGoalAvg (ver nota arriba): evita
-    // que los tiros/tiros-a-puerta de la liga colapsen con pocos partidos.
-    const shotsObs = (allLeagueStats || []).map(r => r.shots).filter(v => v != null);
-    const sotObs = (allLeagueStats || []).map(r => r.shots_on_target).filter(v => v != null);
-    const leagueAvgShots = (sum(shotsObs) + PRIOR_SHOTS * PRIOR_W) / (shotsObs.length + PRIOR_W);
-    const leagueAvgSoT = (sum(sotObs) + PRIOR_SOT * PRIOR_W) / (sotObs.length + PRIOR_W);
-    const leagueSotRate = leagueAvgShots > 0 ? leagueAvgSoT / leagueAvgShots : 0.35;
-    const leagueConvRate = leagueAvgSoT > 0 ? leagueGoalAvg / leagueAvgSoT : 0.30;
+    // ─── Baseline fija de tiros y tiros a puerta (ver nota arriba) ──
+    const leagueAvgShots = 12;
+    const leagueAvgSoT = 4.5;
+    const leagueSotRate = leagueAvgSoT / leagueAvgShots;   // ~0.375
+    const leagueConvRate = leagueGoalAvg / leagueAvgSoT;   // ~0.30
 
     // ─── Cadena: cargar tiros propios y del rival en cada partido ──
     const allUuids = [...new Set([...homeUuids, ...awayUuids])];
@@ -565,27 +614,19 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
     const homeS = blendLeague(homeNorm);
     const awayS = blendLeague(awayNorm);
 
-    // ── Cadena: tiros esperados, p(tiro a puerta), p(a puerta→gol) ──
-    // Combinación: ataque × defensa_rival_permitida, normalizado a media de liga.
-    let E_shots_home = leagueAvgShots * (homeS.shots / leagueAvgShots) * (awayS.oppShots / leagueAvgShots);
-    let E_shots_away = leagueAvgShots * (awayS.shots / leagueAvgShots) * (homeS.oppShots / leagueAvgShots);
-
-    const homeSotProb = clamp(
-        (homeS.sot / Math.max(homeS.shots, 0.1)) * (awayS.oppSot / Math.max(awayS.oppShots, 0.1)) / leagueSotRate,
-        0.15, 0.75
-    );
-    const awaySotProb = clamp(
-        (awayS.sot / Math.max(awayS.shots, 0.1)) * (homeS.oppSot / Math.max(homeS.oppShots, 0.1)) / leagueSotRate,
-        0.15, 0.75
-    );
-    const homeConvProb = clamp(
-        (homeS.goals / Math.max(homeS.sot, 0.1)) * (awayS.oppGoals / Math.max(awayS.oppSot, 0.1)) / leagueConvRate,
-        0.08, 0.60
-    );
-    const awayConvProb = clamp(
-        (awayS.goals / Math.max(awayS.sot, 0.1)) * (homeS.oppGoals / Math.max(homeS.oppSot, 0.1)) / leagueConvRate,
-        0.08, 0.60
-    );
+    // ── Tiros esperados, p(tiro a puerta), p(a puerta→gol) ──
+    // TODO anclado a la baseline fija de liga. Antes salía de las ratios de
+    // finalización del PROPIO equipo (homeS.sot/homeS.shots, etc.), que la
+    // simulación se autogenera → un mal arranque de puntería se realimentaba y
+    // espiraba hasta el 0-0 crónico, y eso pesaba MÁS que el OVR (un equipo
+    // fuerte tiraba mucho pero no metía). Ahora el nivel es fijo y la diferencia
+    // por calidad la ponen el OVR (E_shots y convProb, más abajo) y la forma.
+    let E_shots_home = leagueAvgShots;
+    let E_shots_away = leagueAvgShots;
+    let homeSotProb = leagueSotRate;
+    let awaySotProb = leagueSotRate;
+    let homeConvProb = leagueConvRate;
+    let awayConvProb = leagueConvRate;
 
     // Forma (aplicada a tiros esperados)
     const formHome = computeFormFactor(homeHist, 'gf');
@@ -625,10 +666,8 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
         }
     }
 
-    E_shots_home = clamp(E_shots_home, 2, 35);
-    E_shots_away = clamp(E_shots_away, 2, 35);
-    const E_shots_home_pre = E_shots_home;
-    const E_shots_away_pre = E_shots_away;
+    // (El clamp y la captura de "pre-rojas" se hacen tras aplicar la fuerza por
+    //  OVR, que necesita las plantillas cargadas abajo.)
 
     // ─── Plantilla y XI ─────────────────────────────────────────────
     const homeSquad = await loadSquad(homeTeam.club_id, season);
@@ -663,24 +702,154 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
             : 6.5;
         return {
             ...p, matches, currentSeasonMatches, avgRating, baseRating,
-            goals, goalRate, redRate, priorCardWeight: prior.cardWeight,
+            goals, goalRate, goalRatePrior: prior.goalRate,
+            redRate, priorCardWeight: prior.cardWeight,
         };
     };
 
     const homeEnriched = homeSquad.map(enrichPlayer);
     const awayEnriched = awaySquad.map(enrichPlayer);
 
-    // XI titular: priorizar apariciones temporada actual en esta competición.
-    // Si no hay datos suficientes, caer a apariciones globales.
-    const pickStarters = (players) => {
-        const weightFor = (p) => p.currentSeasonMatches * 3 + p.matches;
-        const sorted = [...players].sort((a, b) => weightFor(b) - weightFor(a) || (b.baseRating - a.baseRating));
-        const gk = sorted.find(p => p.position === 'Goalkeeper');
-        const field = sorted.filter(p => p.position !== 'Goalkeeper').slice(0, 10);
-        return [gk, ...field].filter(Boolean).slice(0, 11);
+    // ── Calidad efectiva de cada jugador = OVR + rendimiento acumulado ──────
+    // Combina dos factores para decidir el XI y la fuerza del partido:
+    //   1) OVR de eFootball (calidad intrínseca), y
+    //   2) las estadísticas que lleva el jugador: su rating medio y sus goles
+    //      respecto a lo esperado en su posición.
+    // En arranque (sin partidos jugados) rating=6.5 y goles=prior → ajuste 0 →
+    // manda el OVR puro. Con historial, el rendimiento sube/baja al jugador.
+    // Los ajustes van acotados para que la forma module sin descontrolar.
+    const attachEffOvr = (enriched) => {
+        const withOvr = enriched.map(p => p.efootball_overall).filter(v => v != null);
+        // Fallback para jugadores sin OVR: la media de sus compañeros con dato; y
+        // si TODA la plantilla carece de OVR (hueco de catálogo, p.ej. Betis),
+        // 77 = media global de OVR → el equipo se trata como promedio, no como
+        // saco de goles. (El fix real sería importar su OVR.)
+        const fallbackOvr = withOvr.length ? mean(withOvr) : 77;
+        for (const p of enriched) {
+            p.baseOvr = p.efootball_overall ?? fallbackOvr;
+            const ratingAdj = clamp((p.baseRating - 6.5) * 3, -6, 6);        // ±6 OVR por rating
+            const goalAdj = clamp((p.goalRate - p.goalRatePrior) * 6, -1, 3); // hasta +3 por goleador
+            p.effOvr = p.baseOvr + ratingAdj + goalAdj;
+        }
     };
-    const homeStarters = pickStarters(homeEnriched);
-    const awayStarters = pickStarters(awayEnriched);
+    attachEffOvr(homeEnriched);
+    attachEffOvr(awayEnriched);
+
+    // Sistema táctico de cada equipo, por precedencia:
+    //   1) formación configurada en la tabla `formations`
+    //   2) seed de formación real por club (CLUB_FORMATIONS)
+    //   3) inferida de la profundidad de la plantilla
+    const resolveSystem = async (leagueTeamId, clubId, players) => {
+        try {
+            const { data } = await sb.from('formations')
+                .select('system')
+                .eq('league_team_id', leagueTeamId)
+                .eq('season', season)
+                .maybeSingle();
+            if (data?.system && linesForSystem(data.system)) return data.system;
+        } catch { /* sin fila configurada: seguir */ }
+        const seeded = CLUB_FORMATIONS[clubId];
+        if (seeded && linesForSystem(seeded)) return seeded;
+        return inferSystem(players);
+    };
+    const homeSystem = await resolveSystem(homeId, homeTeam.club_id, homeEnriched);
+    const awaySystem = await resolveSystem(awayId, awayTeam.club_id, awayEnriched);
+
+    // XI titular por líneas: 1 POR + N DEF/MED/DEL según el sistema, cogiendo el
+    // MEJOR de cada línea por OVR (apariciones y rating como desempate). Si una
+    // línea no tiene profundidad, se rellena con los mejores disponibles.
+    const pickStarters = (players, system) => {
+        const lines = linesForSystem(system) || SYSTEM_LINES[DEFAULT_SYSTEM];
+        const apps = (p) => p.currentSeasonMatches * 3 + p.matches;
+        // Mejor de cada línea por calidad efectiva (OVR + rendimiento); apariciones
+        // como desempate (titular habitual).
+        const byQuality = (a, b) => (b.effOvr - a.effOvr) || (apps(b) - apps(a));
+        const grouped = { POR: [], DEF: [], MC: [], DEL: [] };
+        for (const p of players) {
+            const g = groupFromPosition(p.position);
+            if (g && grouped[g]) grouped[g].push(p);
+        }
+        for (const g of Object.keys(grouped)) grouped[g].sort(byQuality);
+        const chosen = [];
+        const used = new Set();
+        const take = (g, n) => {
+            for (const p of grouped[g]) {
+                if (chosen.length >= 11 || used.has(p.id)) continue;
+                if (chosen.filter(c => c.line === g).length >= n) break;
+                used.add(p.id); chosen.push({ ...p, line: g });
+            }
+        };
+        take('POR', 1);
+        take('DEF', lines.DEF);
+        take('MC', lines.MC);
+        take('DEL', lines.DEL);
+        // Rellenar hasta 11 con los mejores que queden (falta de profundidad).
+        if (chosen.length < 11) {
+            const rest = players.filter(p => !used.has(p.id)).sort(byQuality);
+            for (const p of rest) {
+                if (chosen.length >= 11) break;
+                used.add(p.id);
+                chosen.push({ ...p, line: groupFromPosition(p.position) || 'MC' });
+            }
+        }
+        return chosen.slice(0, 11);
+    };
+    const homeStarters = pickStarters(homeEnriched, homeSystem);
+    const awayStarters = pickStarters(awayEnriched, awaySystem);
+
+    // ─── Fuerza del partido: OVR del XI (no del equipo entero) + forma ──────
+    // Se promedia sobre los 11 TITULARES elegidos (que el rendimiento ya ayudó a
+    // seleccionar en pickStarters), no sobre toda la plantilla.
+    const ovrOf = (starters, lineSet) => {
+        const vals = starters.filter(p => lineSet.includes(p.line) && p.baseOvr != null)
+            .map(p => p.baseOvr);
+        return vals.length ? mean(vals) : null;
+    };
+    const homeOvr = ovrOf(homeStarters, ['POR', 'DEF', 'MC', 'DEL']);
+    const awayOvr = ovrOf(awayStarters, ['POR', 'DEF', 'MC', 'DEL']);
+    const homeAtkOvr = ovrOf(homeStarters, ['MC', 'DEL']);
+    const homeDefOvr = ovrOf(homeStarters, ['POR', 'DEF']);
+    const awayAtkOvr = ovrOf(awayStarters, ['MC', 'DEL']);
+    const awayDefOvr = ovrOf(awayStarters, ['POR', 'DEF']);
+
+    // Forma REVERTIBLE aplicada a la fuerza. Clave para que NO espire: se mide
+    // RELATIVA al propio nivel del equipo (reciente vs. su media, vía
+    // computeFormFactor: formHome/formAway=ataque 'gf', formHomeDef/formAwayDef=
+    // defensa 'ga'), no en absoluto. Un equipo que rinde a su media → forma ≈0
+    // (no penaliza por ser malo); solo las RACHAS mueven, y al pasar la racha la
+    // ventana reciente se renueva → la forma vuelve sola a 0. Un equipo fuerte en
+    // mala racha gana partidos por OVR, lo que rellena la ventana y lo recupera.
+    // Acotada a ±3 OVR: modula sin descontrolar.
+    const FORM_STRENGTH = 3;
+    const formAdj = (fGF, fGA) => clamp((fGF - fGA) * FORM_STRENGTH, -3, 3);
+    const homeFormAdj = formAdj(formHome, formHomeDef);
+    const awayFormAdj = formAdj(formAway, formAwayDef);
+    const homeQ = (homeOvr ?? 0) + homeFormAdj;  // calidad del partido = OVR XI + forma
+    const awayQ = (awayOvr ?? 0) + awayFormAdj;
+
+    // El diferencial de calidad mueve dos palancas (simétricas → no infla el
+    // marcador total, solo reparte quién domina): (1) el VOLUMEN de tiros y (2)
+    // la CONVERSIÓN. Es la única fuente de diferencia, ya que puntería/conversión
+    // parten de la baseline.
+    const OVR_SHOT_SCALE = 22;  // volumen de tiros
+    const OVR_CONV_SCALE = 30;  // conversión
+    let ovrMulHome = 1, ovrMulAway = 1, convMulHome = 1, convMulAway = 1;
+    if (homeOvr != null && awayOvr != null) {
+        const d = homeQ - awayQ;
+        ovrMulHome = clamp(Math.exp(d / OVR_SHOT_SCALE), 0.6, 1.7);
+        ovrMulAway = clamp(Math.exp(-d / OVR_SHOT_SCALE), 0.6, 1.7);
+        convMulHome = clamp(Math.exp(d / OVR_CONV_SCALE), 0.75, 1.35);
+        convMulAway = clamp(Math.exp(-d / OVR_CONV_SCALE), 0.75, 1.35);
+    }
+    E_shots_home *= ovrMulHome;
+    E_shots_away *= ovrMulAway;
+    homeConvProb = clamp(homeConvProb * convMulHome, 0.08, 0.60);
+    awayConvProb = clamp(awayConvProb * convMulAway, 0.08, 0.60);
+
+    E_shots_home = clamp(E_shots_home, 2, 35);
+    E_shots_away = clamp(E_shots_away, 2, 35);
+    const E_shots_home_pre = E_shots_home;
+    const E_shots_away_pre = E_shots_away;
 
     // ─── Tarjetas rojas (antes de goles) ────────────────────────────
     const homeRedHist = await loadRedCardsHistory(homeId, competitionId);
@@ -860,6 +1029,10 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
     header.push(`-- Cadena ${teamLabel(awayTeam)}: tiros_esp=${E_shots_away.toFixed(1)} (pre-rojas ${E_shots_away_pre.toFixed(1)}), p(a_puerta)=${(awaySotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(awayConvProb * 100).toFixed(0)}% → muestra tiros=${shotsAwaySim}, a_puerta=${sotAwaySim}, goles=${awayGoals}`);
     header.push(`-- Partidos competición: home=${homeHist.length} (Nef=${homeNorm.effectiveN.toFixed(1)}), away=${awayHist.length} (Nef=${awayNorm.effectiveN.toFixed(1)}) | H2H global: ${h2h.count} | Elo: ${eloHome ?? 'n/a'}/${eloAway ?? 'n/a'}`);
     header.push(`-- PPG: ${teamLabel(homeTeam)}=${teamStrength(homeId).toFixed(2)}, ${teamLabel(awayTeam)}=${teamStrength(awayId).toFixed(2)} (liga=${leaguePPG.toFixed(2)}, ponderación por similitud k=1.0)`);
+    const ovrTxt = (o) => o == null ? 'n/a' : o.toFixed(1);
+    const sgn = (v) => (v >= 0 ? '+' : '') + v.toFixed(1);
+    header.push(`-- Táctica ${teamLabel(homeTeam)}: ${homeSystem} | OVR XI=${ovrTxt(homeOvr)} (atk=${ovrTxt(homeAtkOvr)}, def=${ovrTxt(homeDefOvr)}) forma=${sgn(homeFormAdj)} → mul_tiros=${ovrMulHome.toFixed(2)}`);
+    header.push(`-- Táctica ${teamLabel(awayTeam)}: ${awaySystem} | OVR XI=${ovrTxt(awayOvr)} (atk=${ovrTxt(awayAtkOvr)}, def=${ovrTxt(awayDefOvr)}) forma=${sgn(awayFormAdj)} → mul_tiros=${ovrMulAway.toFixed(2)}`);
     header.push(`-- Liga: avg_goles=${leagueGoalAvg.toFixed(2)}, avg_tiros=${leagueAvgShots.toFixed(1)}, avg_a_puerta=${leagueAvgSoT.toFixed(1)} (SoT%=${(leagueSotRate * 100).toFixed(0)}, conv%=${(leagueConvRate * 100).toFixed(0)})`);
     if (homeReds.length) header.push(`-- ROJAS ${teamLabel(homeTeam)}: ${homeReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
     if (awayReds.length) header.push(`-- ROJAS ${teamLabel(awayTeam)}: ${awayReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);

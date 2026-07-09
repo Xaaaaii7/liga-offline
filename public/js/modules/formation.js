@@ -56,6 +56,58 @@ export const FORMATION_TEMPLATES = {
         { index: 8, line: "MC", x: 80, y: 55 },
         { index: 9, line: "DEL", x: 40, y: 30 },
         { index: 10, line: "DEL", x: 60, y: 30 }
+    ],
+    "4-2-3-1": [
+        { index: 0, line: "POR", x: 50, y: 90 },
+        { index: 1, line: "DEF", x: 20, y: 72 },
+        { index: 2, line: "DEF", x: 40, y: 75 },
+        { index: 3, line: "DEF", x: 60, y: 75 },
+        { index: 4, line: "DEF", x: 80, y: 72 },
+        { index: 5, line: "MC", x: 38, y: 60 },
+        { index: 6, line: "MC", x: 62, y: 60 },
+        { index: 7, line: "MC", x: 25, y: 42 },
+        { index: 8, line: "MC", x: 50, y: 40 },
+        { index: 9, line: "MC", x: 75, y: 42 },
+        { index: 10, line: "DEL", x: 50, y: 25 }
+    ],
+    "3-4-3": [
+        { index: 0, line: "POR", x: 50, y: 90 },
+        { index: 1, line: "DEF", x: 28, y: 74 },
+        { index: 2, line: "DEF", x: 50, y: 72 },
+        { index: 3, line: "DEF", x: 72, y: 74 },
+        { index: 4, line: "MC", x: 20, y: 52 },
+        { index: 5, line: "MC", x: 40, y: 50 },
+        { index: 6, line: "MC", x: 60, y: 50 },
+        { index: 7, line: "MC", x: 80, y: 52 },
+        { index: 8, line: "DEL", x: 25, y: 28 },
+        { index: 9, line: "DEL", x: 50, y: 25 },
+        { index: 10, line: "DEL", x: 75, y: 28 }
+    ],
+    "4-1-4-1": [
+        { index: 0, line: "POR", x: 50, y: 90 },
+        { index: 1, line: "DEF", x: 20, y: 72 },
+        { index: 2, line: "DEF", x: 40, y: 75 },
+        { index: 3, line: "DEF", x: 60, y: 75 },
+        { index: 4, line: "DEF", x: 80, y: 72 },
+        { index: 5, line: "MC", x: 50, y: 60 },
+        { index: 6, line: "MC", x: 20, y: 45 },
+        { index: 7, line: "MC", x: 40, y: 43 },
+        { index: 8, line: "MC", x: 60, y: 43 },
+        { index: 9, line: "MC", x: 80, y: 45 },
+        { index: 10, line: "DEL", x: 50, y: 25 }
+    ],
+    "5-3-2": [
+        { index: 0, line: "POR", x: 50, y: 90 },
+        { index: 1, line: "DEF", x: 12, y: 70 },
+        { index: 2, line: "DEF", x: 31, y: 74 },
+        { index: 3, line: "DEF", x: 50, y: 76 },
+        { index: 4, line: "DEF", x: 69, y: 74 },
+        { index: 5, line: "DEF", x: 88, y: 70 },
+        { index: 6, line: "MC", x: 30, y: 52 },
+        { index: 7, line: "MC", x: 50, y: 50 },
+        { index: 8, line: "MC", x: 70, y: 52 },
+        { index: 9, line: "DEL", x: 40, y: 28 },
+        { index: 10, line: "DEL", x: 60, y: 28 }
     ]
 };
 
