@@ -201,6 +201,11 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
             ? `<a class="btn btn-sm btn-primary result-registrar" href="entrar-resultado.html?match=${p.match_uuid}&comp=${encodeURIComponent(compSlugForLinks)}" onclick="event.stopPropagation()">Registrar resultado</a>`
             : '';
 
+        // Partido IA-vs-IA no jugado → botón simular (llama a /api/simulate).
+        const simularHTML = (!jugado && !esHumano && p.match_uuid)
+            ? `<button type="button" class="btn btn-sm btn-secondary result-simular" data-match-uuid="${p.match_uuid}" onclick="event.stopPropagation()">🤖 Simular</button>`
+            : '';
+
         const cityName = getCityForKey(p.local);
         const meteoPlaceholder = cityName
             ? `<div class="result-meteo muted"
@@ -337,8 +342,8 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
           ${(meteoPlaceholder || arbitroChip || predsPillHTML)
             ? `<div class="result-row-extras">${meteoPlaceholder}${arbitroChip}${predsPillHTML}</div>`
             : ''}
-          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML
-            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}</div>`
+          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML || simularHTML
+            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}${simularHTML}</div>`
             : ''}
         </article>
       `;
@@ -349,6 +354,34 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
         ${cardsHtml}
       </section>
     `;
+
+    // Botones "Simular" (partidos IA-vs-IA) → endpoint /api/simulate del
+    // server.mjs (la simulación corre en Node), luego recarga para ver el
+    // resultado. Simula por match_uuid (matches.id no es único entre ligas).
+    jornadaWrap.querySelectorAll('.result-simular').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const uuid = Number(btn.dataset.matchUuid);
+            if (!uuid) return;
+            const prev = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Simulando…';
+            try {
+                const res = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ match_uuid: uuid }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                window.location.reload();
+            } catch (e) {
+                console.error('Error simulando:', e);
+                btn.disabled = false;
+                btn.textContent = prev;
+                alert('No se pudo simular el partido: ' + e.message);
+            }
+        });
+    });
 
     // Meteo async — la query usa data-partido-id (en el propio .result-meteo)
     // porque el placeholder vive fuera del .partido-card en la nueva fila estirada.

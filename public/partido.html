@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Partido — Detalles</title>
+  <script src="js/theme-preload.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/partido.css" />
+</head>
+
+<body class="page-partido">
+  <header class="site-header">
+    <img src="img/logo.png" alt="Logo Torneo" class="logo" />
+    <h1 id="partido-header-title">Partido</h1>
+    <nav id="main-nav"></nav>
+  </header>
+
+  <main class="container" id="partido-root">
+    <div class="partido-loading">Cargando partido...</div>
+  </main>
+
+  <footer class="site-footer">Liga offline</footer>
+  <script type="module" src="js/loader.js"></script>
+  <script type="module" src="js/core-loader.js"></script>
+  <script type="module" src="js/liga/partido.js"></script>
+</body>
+
+</html>

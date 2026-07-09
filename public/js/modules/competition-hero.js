@@ -39,7 +39,9 @@ async function loadHeroStats(competitionId, competitionType) {
       .select('id', { count: 'exact', head: true })
       .eq('competition_id', competitionId),
     supa.from('matches')
-      .select('round_id, round:rounds!matches_round_id_fkey(number)')
+      // Sin embed round:rounds (offline no tiene esa FK → 400). round_id ya
+      // es el número de jornada directamente.
+      .select('round_id')
       .eq('competition_id', competitionId)
       .not('home_goals', 'is', null)
       .order('round_id', { ascending: false })

@@ -190,7 +190,34 @@ async function proxyToPostgrest(req, res) {
   res.end(Buffer.from(await upstream.arrayBuffer()));
 }
 
-function startStaticServer() {
+// ── Simular un partido IA-vs-IA server-side ────────────────────────────────
+// La simulación (scripts/simulate-match.js) corre en Node (lee historial,
+// genera SQL) — no puede correr en el navegador. Este endpoint la lanza para
+// un match_uuid concreto y aplica el SQL a la BD local, para que el botón
+// "Simular" de resultados.html funcione sin CLI. Se usa `matchuuid` (no
+// `match`) porque matches.id no es único entre competiciones.
+async function simulateMatch(db, matchUuid) {
+  const tmpFile = path.join(os.tmpdir(), `sim-${matchUuid}-${Date.now()}.sql`);
+  await new Promise((resolve, reject) => {
+    const proc = spawn(process.execPath, ['scripts/simulate-match.js', 'matchuuid', String(matchUuid), tmpFile], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stderr = '';
+    proc.stderr.on('data', (d) => { stderr += d; });
+    proc.on('error', reject);
+    proc.on('exit', (code) => code === 0 ? resolve() : reject(new Error(stderr.trim() || `simulate-match salió con código ${code}`)));
+  });
+  const sql = await readFile(tmpFile, 'utf8');
+  await db.exec(sql);
+  await rm(tmpFile).catch(() => {});
+}
+
+async function readBodyJson(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  if (!chunks.length) return {};
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return {}; }
+}
+
+function startStaticServer(db) {
   const server = createServer(async (req, res) => {
     if (req.url.startsWith('/rest/v1/')) {
       try {
@@ -198,6 +225,22 @@ function startStaticServer() {
       } catch (e) {
         res.writeHead(502);
         return res.end(`Proxy a PostgREST falló: ${e.message}`);
+      }
+    }
+    if (req.url === '/api/simulate' && req.method === 'POST') {
+      try {
+        const body = await readBodyJson(req);
+        const uuid = parseInt(body.match_uuid, 10);
+        if (!Number.isFinite(uuid)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ ok: false, error: 'match_uuid inválido' }));
+        }
+        await simulateMatch(db, uuid);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: e.message }));
       }
     }
     try {
@@ -237,7 +280,7 @@ const db = await openDatabase();
 const socketServer = await startSocketServer(db);
 const postgrestBin = await ensurePostgrest();
 const postgrestProc = await startPostgrest(postgrestBin);
-const staticServer = startStaticServer();
+const staticServer = startStaticServer(db);
 const decayTimer = startDecayScheduler(db);
 
 console.log('\n[liga-offline] Listo. anonKey local para SUPABASE_CONFIG:');

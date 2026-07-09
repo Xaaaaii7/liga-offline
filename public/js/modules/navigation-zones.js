@@ -19,6 +19,7 @@ export const NAVIGATION_ZONES = {
       'estadisticas.html',
       'configurar-competicion.html',
       'entrar-resultado.html',
+      'partido.html',
       'clasificacion.html',
       'resultados.html',
       'clubs.html',

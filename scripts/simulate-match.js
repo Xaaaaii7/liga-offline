@@ -20,9 +20,10 @@ import { dirname, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
 const mode = args[0];
-if (!['match', 'teams'].includes(mode)) {
+if (!['match', 'matchuuid', 'teams'].includes(mode)) {
     console.error('Usage:');
     console.error('  node scripts/simulate-match.js match <matchId> [outputPath]');
+    console.error('  node scripts/simulate-match.js matchuuid <matchUuid> [outputPath]');
     console.error('  node scripts/simulate-match.js teams <competitionId> <home> <away> [outputPath]');
     process.exit(1);
 }
@@ -371,15 +372,20 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
     let outputPath = null;
     let homeTeam, awayTeam;
 
-    if (mode === 'match') {
-        const mid = args[1];
+    if (mode === 'match' || mode === 'matchuuid') {
+        const key = args[1];
         outputPath = args[2] || null;
-        if (!mid) { console.error('Falta matchId'); process.exit(1); }
+        if (!key) { console.error('Falta identificador de partido'); process.exit(1); }
+        // matchuuid: busca por match_uuid (único, seguro entre competiciones).
+        // match: busca por id (texto) — NO es único entre competiciones, se
+        // mantiene por compatibilidad CLI pero preferir matchuuid.
+        const col = mode === 'matchuuid' ? 'match_uuid' : 'id';
+        const val = mode === 'matchuuid' ? parseInt(key, 10) : key;
         const { data: m } = await sb
             .from('matches')
             .select('id, match_uuid, competition_id, season, home_league_team_id, away_league_team_id, home_goals, away_goals, round_type')
-            .eq('id', mid).maybeSingle();
-        if (!m) { console.error('Partido no encontrado:', mid); process.exit(1); }
+            .eq(col, val).maybeSingle();
+        if (!m) { console.error('Partido no encontrado:', key); process.exit(1); }
         if (m.home_goals != null || m.away_goals != null) {
             console.error('El partido ya tiene resultado'); process.exit(1);
         }
@@ -444,9 +450,17 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
         .not('home_goals', 'is', null)
         .not('away_goals', 'is', null);
     const cleanCompMatches = (allCompMatches || []).filter(m => m.resolved_administratively !== true);
-    const leagueGoalAvg = cleanCompMatches.length
-        ? mean(cleanCompMatches.flatMap(m => [m.home_goals, m.away_goals]))
-        : 1.3;
+
+    // Priores globales + shrinkage. CRÍTICO para ligas nuevas que se pueblan
+    // partido a partido: sin esto, las "medias de liga" salen de los pocos
+    // partidos ya jugados de ESTA competición, así que un solo primer 0-0
+    // hace avg_goles=0 → conversión=0 → todos los partidos siguientes 0-0
+    // (espiral). Con shrinkage, con pocos partidos manda el prior; con muchos,
+    // converge a la media real de la competición.
+    const PRIOR_GOALS = 1.3, PRIOR_SHOTS = 11, PRIOR_SOT = 4;
+    const PRIOR_W = 20; // observaciones-prior (~10 partidos)
+    const goalObs = cleanCompMatches.flatMap(m => [m.home_goals, m.away_goals]);
+    const leagueGoalAvg = (sum(goalObs) + PRIOR_GOALS * PRIOR_W) / (goalObs.length + PRIOR_W);
 
     // ─── PPG por equipo (métrica de nivel) ─────────────────────────
     const teamPoints = new Map();
@@ -471,12 +485,12 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
         .from('match_team_stats')
         .select('shots, shots_on_target')
         .eq('competition_id', competitionId);
-    const leagueAvgShots = (allLeagueStats || []).length
-        ? mean((allLeagueStats || []).map(r => r.shots).filter(v => v != null))
-        : 11;
-    const leagueAvgSoT = (allLeagueStats || []).length
-        ? mean((allLeagueStats || []).map(r => r.shots_on_target).filter(v => v != null))
-        : 4;
+    // Mismo shrinkage hacia priores que leagueGoalAvg (ver nota arriba): evita
+    // que los tiros/tiros-a-puerta de la liga colapsen con pocos partidos.
+    const shotsObs = (allLeagueStats || []).map(r => r.shots).filter(v => v != null);
+    const sotObs = (allLeagueStats || []).map(r => r.shots_on_target).filter(v => v != null);
+    const leagueAvgShots = (sum(shotsObs) + PRIOR_SHOTS * PRIOR_W) / (shotsObs.length + PRIOR_W);
+    const leagueAvgSoT = (sum(sotObs) + PRIOR_SOT * PRIOR_W) / (sotObs.length + PRIOR_W);
     const leagueSotRate = leagueAvgShots > 0 ? leagueAvgSoT / leagueAvgShots : 0.35;
     const leagueConvRate = leagueAvgSoT > 0 ? leagueGoalAvg / leagueAvgSoT : 0.30;
 
@@ -853,27 +867,32 @@ const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.
     if (awayScorers.length) header.push(`-- GOLES ${teamLabel(awayTeam)}: ${awayScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
     sql.push(header.join('\n'), '');
 
-    if (mode === 'match') {
+    if (mode === 'match' || mode === 'matchuuid') {
         sql.push('BEGIN;', '');
-        sql.push(`-- 1. Actualizar matches`);
-        sql.push(`UPDATE matches SET home_goals = ${homeGoals}, away_goals = ${awayGoals} WHERE id = ${sqlStr(matchId)};`);
-        sql.push('');
-        sql.push(`-- 2. match_team_stats`);
+        // ORDEN IMPORTA: primero stats/goles/tarjetas/ratings y el UPDATE del
+        // marcador AL FINAL. trigger_check_resolved_administratively (BEFORE
+        // UPDATE de home_goals/away_goals) decide resolved_administratively
+        // mirando si YA existen filas en match_team_stats; si el UPDATE va
+        // antes, marca el partido como administrativo (fuera de MVP/Best XI).
+        sql.push(`-- 1. match_team_stats`);
         sql.push(teamStatsInsert(homeId, homeStats, homeGoals, matchId, matchUuid, competitionId, false));
         sql.push(teamStatsInsert(awayId, awayStats, awayGoals, matchId, matchUuid, competitionId, false));
         if (homeScorers.length + awayScorers.length > 0) {
-            sql.push('', `-- 3. goal_events`);
+            sql.push('', `-- 2. goal_events`);
             sql.push(goalEventsInsert([...homeScorers.map(s => ({ ...s, teamId: homeId })), ...awayScorers.map(s => ({ ...s, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
         }
         if (homeReds.length + awayReds.length > 0) {
-            sql.push('', `-- 4. match_red_cards`);
+            sql.push('', `-- 3. match_red_cards`);
             sql.push(redCardsInsert([...homeReds.map(r => ({ ...r, teamId: homeId })), ...awayReds.map(r => ({ ...r, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
         }
-        sql.push('', `-- 5. match_player_ratings`);
+        sql.push('', `-- 4. match_player_ratings`);
         sql.push(ratingsInsert([
             ...homeRated.map(p => ({ ...p, teamId: homeId })),
             ...awayRated.map(p => ({ ...p, teamId: awayId })),
         ], matchId, matchUuid, competitionId, season, false));
+        sql.push('', `-- 5. Actualizar marcador (AL FINAL, ver nota de orden arriba)`);
+        // WHERE por match_uuid (único), NO por id (que se repite entre ligas).
+        sql.push(`UPDATE matches SET home_goals = ${homeGoals}, away_goals = ${awayGoals} WHERE match_uuid = ${sqlNum(matchUuid)};`);
         sql.push('', 'COMMIT;');
     } else {
         // modo teams: usar DO $$ con RETURNING
