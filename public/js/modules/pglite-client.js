@@ -9,31 +9,80 @@
 import { PGlite } from '../../vendor/pglite/index.js';
 
 // ── Init de la BD (carga el seed la 1ª vez, persiste en IndexedDB) ───────────
+
+// Muestra un error a pantalla completa (para diagnosticar en Tauri, que no
+// tiene consola visible). Rethrow lo hace el llamante.
+function showDbFatal(msg) {
+    try {
+        console.error('[PGlite]', msg);
+        let d = document.getElementById('__pglite_fatal');
+        if (!d) {
+            d = document.createElement('div');
+            d.id = '__pglite_fatal';
+            d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#2a0a0a;color:#ffd7d7;' +
+                'font:13px/1.5 monospace;padding:24px;overflow:auto;white-space:pre-wrap';
+            document.body.appendChild(d);
+        }
+        d.textContent = '⚠️ Error inicializando la base de datos (PGlite)\n\n' + msg;
+    } catch { /* noop */ }
+}
+
+// Borra la BD de PGlite en IndexedDB (para reintentar el seed si quedó vacía).
+async function deletePgliteIdb() {
+    let names = [];
+    try {
+        if (indexedDB.databases) {
+            const dbs = await indexedDB.databases();
+            names = dbs.map(d => d && d.name).filter(n => n && /pglite|liga-offline/i.test(n));
+        }
+    } catch { /* algunos webviews no soportan .databases() */ }
+    if (!names.length) names = ['/pglite/liga-offline', 'pglite/liga-offline', 'liga-offline'];
+    await Promise.all(names.map(n => new Promise(res => {
+        try { const r = indexedDB.deleteDatabase(n); r.onsuccess = r.onerror = r.onblocked = () => res(); }
+        catch { res(); }
+    })));
+}
+
 let dbPromise = null;
 async function getDb() {
     if (dbPromise) return dbPromise;
     dbPromise = (async () => {
         const IDB = 'idb://liga-offline';
-        const FLAG = 'liga-offline-seeded';
-        // loadDataDir SOLO funciona sobre una BD nueva; decidimos ANTES de crear.
-        let db;
-        if (localStorage.getItem(FLAG)) {
-            db = new PGlite(IDB);
+        // ¿la BD ya está poblada? (existe el catálogo con filas)
+        const hasCatalog = async (db) => {
+            try { return (await db.query('select count(*)::int c from clubs')).rows[0].c > 0; }
+            catch { return false; }
+        };
+        const fetchSeed = async () => {
+            let r;
+            try { r = await fetch('seed/pgdata.tar.gz'); }
+            catch (e) { throw new Error('No se pudo pedir seed/pgdata.tar.gz: ' + (e && e.message || e)); }
+            if (!r.ok) throw new Error('seed/pgdata.tar.gz devolvió HTTP ' + r.status + ' ' + r.statusText);
+            const blob = await r.blob();
+            if (!blob || blob.size < 1000) throw new Error('El seed llegó vacío o truncado (' + (blob ? blob.size : 0) + ' bytes)');
+            return blob;
+        };
+        try {
+            // 1) intentar abrir la BD persistida
+            let db = new PGlite(IDB);
             await db.waitReady;
-        } else {
-            const seed = await fetch('seed/pgdata.tar.gz').then(r => r.blob());
-            try {
-                db = new PGlite(IDB, { loadDataDir: seed });
-                await db.waitReady;
-            } catch (e) {
-                // la BD ya existía (flag desincronizado) → abrir normal
-                db = new PGlite(IDB);
-                await db.waitReady;
+            if (await hasCatalog(db)) { await loadFkMeta(db); return db; }
+            // 2) vacía o sin esquema (1er arranque, o una carga previa que falló):
+            //    cerrar, borrar y recargar desde el seed
+            try { await db.close(); } catch { /* noop */ }
+            await deletePgliteIdb();
+            db = new PGlite(IDB, { loadDataDir: await fetchSeed() });
+            await db.waitReady;
+            if (!(await hasCatalog(db))) {
+                throw new Error('El seed cargó pero el catálogo sigue vacío (clubs=0). ¿Seed corrupto?');
             }
-            localStorage.setItem(FLAG, '1');
+            await loadFkMeta(db);
+            return db;
+        } catch (e) {
+            showDbFatal((e && e.stack) || (e && e.message) || String(e));
+            dbPromise = null; // permitir reintento en la siguiente llamada
+            throw e;
         }
-        await loadFkMeta(db);
-        return db;
     })();
     return dbPromise;
 }
