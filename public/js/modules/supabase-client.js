@@ -100,6 +100,8 @@ export async function loadSupabaseFactory() {
 // Modo PGlite-en-navegador (sin backend Node/PostgREST). Se activa con ?pglite=1
 // (persiste en localStorage) y se desactiva con ?pglite=0. Por defecto: supabase-js.
 export function usePglite() {
+    // En Tauri (app de escritorio) no hay servidor/PostgREST → siempre PGlite.
+    if (typeof window !== 'undefined' && (window.__TAURI__ || window.__TAURI_INTERNALS__)) return true;
     try {
         const q = new URLSearchParams(location.search).get('pglite');
         if (q === '1') { localStorage.setItem('use-pglite', '1'); return true; }

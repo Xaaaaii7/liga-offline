@@ -4,7 +4,8 @@
   "description": "Liga offline vs IA - motor local (PGlite + PostgREST) para simular jornadas sin depender de Supabase cloud",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tauri": "tauri"
   },
   "keywords": [],
   "author": "",
@@ -17,5 +18,8 @@
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.22.0",
     "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
   }
 }

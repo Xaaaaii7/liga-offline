@@ -71,3 +71,33 @@ node scripts/export-seed-clean.mjs           # versión limpia (catálogo sin da
 - `scripts/` — simulación (`simulate-match.js`), re-simulación, export de seed, import de catálogo.
 - `supabase/schema/*.sql` — esquema + funciones (mismo que corre en PGlite).
 - `server.mjs` — runtime de desarrollo (PGlite + PostgREST + estáticos).
+
+---
+
+## App de escritorio (Tauri)
+
+Instalador nativo de doble clic (Windows `.exe`/`.msi`, macOS `.dmg`, Linux `.deb`/`.rpm`/`.AppImage`). La app corre en modo PGlite (sin backend) automáticamente dentro de Tauri.
+
+**Requisitos para compilar** (en la máquina destino):
+- **Rust**: https://rustup.rs
+- **Windows**: *Build Tools for Visual Studio* (C++) + WebView2 (ya viene en Win10/11).
+- **Linux**: `sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev`
+- **macOS**: Xcode Command Line Tools.
+
+**Compilar** (regenera antes los binarios vendorizados + seed, ver arriba):
+```bash
+npm install
+npm run tauri build      # instalador para el SO actual → src-tauri/target/release/bundle/
+npm run tauri dev        # abrir la app en modo desarrollo
+```
+
+### Android
+Requiere Android SDK + NDK + JDK 17 y los targets de Rust
+(`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`).
+Con `ANDROID_HOME`/`NDK_HOME`/`JAVA_HOME` configurados:
+```bash
+npm run tauri android init
+npm run tauri android build      # APK en src-tauri/gen/android/app/build/outputs/
+```
+
+> **iOS** solo se compila en macOS con Xcode y cuenta de Apple Developer. Para móvil, la vía práctica es la **PWA** (ver arriba).
