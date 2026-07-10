@@ -40,6 +40,11 @@ for (const t of ['match_team_stats', 'goal_events', 'match_red_cards', 'match_ye
     const r = await client.query(`DELETE FROM ${t} WHERE match_uuid IN (${uuidList})`);
     console.log(`  borradas ${r.rowCount} filas de ${t}`);
 }
+// Lesiones: por match_uuid (como el resto).
+{
+    const r = await client.query(`DELETE FROM match_injuries WHERE match_uuid IN (${uuidList})`);
+    if (r.rowCount) console.log(`  borradas ${r.rowCount} filas de match_injuries`);
+}
 // Suspensiones: por competición (referencian partidos futuros, no solo los jugados).
 for (const cid of comps) {
     const r = await client.query(`DELETE FROM player_suspensions WHERE competition_id = ${cid}`);

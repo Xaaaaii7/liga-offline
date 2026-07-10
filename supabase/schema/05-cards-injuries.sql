@@ -36,6 +36,9 @@ CREATE TABLE match_injuries (
   competition_id integer REFERENCES competitions(id),
   season         text,
   match_uuid     integer NOT NULL REFERENCES matches(match_uuid) ON DELETE CASCADE,
+  matches_out    integer DEFAULT 1,  -- partidos de baja (1-4); añadido 2026-07-10
+  origin_round   integer,            -- round_id del partido donde se lesionó
+  minute         integer,            -- minuto de la lesión
   UNIQUE (match_id, player_id)
 );
 

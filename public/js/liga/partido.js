@@ -134,7 +134,8 @@ const safeUrl = (url) => {
     yellowCardsResult,
     otherJornadaResult,
     refereeResult,
-    subsResult
+    subsResult,
+    injuriesResult
   ] = await Promise.all([
     supa.from('league_teams').select('id, club_id, display_name, nickname, clubs(name, crest_url)').in('id', [homeTeamId, awayTeamId]),
     supa.from('goal_events').select('*, players(name)').eq('match_uuid', matchUuid).order('id'),
@@ -147,7 +148,8 @@ const safeUrl = (url) => {
     supa.from('match_yellow_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid),
     otherJornadaPromise,
     refereePromise,
-    supa.from('match_substitutions').select('player_off_id, player_on_id, league_team_id, minute').eq('match_uuid', matchUuid).order('minute')
+    supa.from('match_substitutions').select('player_off_id, player_on_id, league_team_id, minute').eq('match_uuid', matchUuid).order('minute'),
+    supa.from('match_injuries').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid)
   ]);
 
   const teams = teamsResult.data || [];
@@ -157,6 +159,7 @@ const safeUrl = (url) => {
   const redCardsData = redCardsResult.data || [];
   const yellowCardsData = yellowCardsResult.data || [];
   const substitutionsData = subsResult.data || [];
+  const injuriesData = injuriesResult.data || [];
   const otherJornadaMatches = otherJornadaResult.data || [];
   const cronicas = []; // offline: sin sistema de noticias/crónicas
   match.refereeInfo = refereeResult?.data || null;
@@ -214,7 +217,7 @@ const safeUrl = (url) => {
 
   // Renderizar eventos (timeline)
   renderEventos(root, {
-    goalEvents, redCardsData, yellowCardsData, substitutionsData, ratingsRaw,
+    goalEvents, redCardsData, yellowCardsData, substitutionsData, injuriesData, ratingsRaw,
     homeTeamId, awayTeamId, isPlayed, season: competition?.season
   });
 
@@ -1564,7 +1567,7 @@ function renderEventos(root, ctx) {
   const panel = root.querySelector('#panel-eventos');
   if (!panel) return;
 
-  const { goalEvents, redCardsData, yellowCardsData, substitutionsData, ratingsRaw, homeTeamId, awayTeamId, isPlayed } = ctx;
+  const { goalEvents, redCardsData, yellowCardsData, substitutionsData, injuriesData, ratingsRaw, homeTeamId, awayTeamId, isPlayed } = ctx;
 
   if (!isPlayed) {
     panel.innerHTML = `<p class="partido-eventos-pending">Partido pendiente.</p>`;
@@ -1638,6 +1641,19 @@ function renderEventos(root, ctx) {
       player_id: sub.player_on_id ?? null,
       name: resolveName(sub.player_on_id),
       sortKey: `s_${i}`
+    });
+  });
+
+  // Lesiones
+  (injuriesData || []).forEach((inj, i) => {
+    const side = sideOf(inj.league_team_id);
+    if (!side) return;
+    events.push({
+      minute: inj.minute ?? null,
+      side, icon: '🚑', label: 'Lesión',
+      player_id: inj.player_id ?? null,
+      name: resolveName(inj.player_id),
+      sortKey: `i_${i}`
     });
   });
 

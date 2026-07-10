@@ -724,20 +724,32 @@ const priorFor = (pos) => {
     const homeEnriched = homeSquad.map(enrichPlayer);
     const awayEnriched = awaySquad.map(enrichPlayer);
 
-    // ── Disponibilidad: excluir SANCIONADOS de la convocatoria ──────────────
-    // Solo en partidos reales (hay match_uuid). Se leen las suspensiones creadas
-    // por partidos anteriores (rojas / 5ª amarilla) para ESTE partido. Las
-    // lesiones se añadirán en un paso posterior.
+    // ── Disponibilidad: excluir SANCIONADOS y LESIONADOS de la convocatoria ──
+    // Solo en partidos reales (hay match_uuid). Sanciones: filas de
+    // player_suspensions para ESTE partido (creadas por rojas/5ª amarilla).
+    // Lesiones: filas de match_injuries cuya ventana (origin_round < ronda actual
+    // ≤ origin_round + matches_out) cubre este partido.
     const suspendedIds = new Set();
+    const injuredIds = new Set();
     if (matchUuid != null) {
         const { data: susRows } = await sb.from('player_suspensions')
             .select('player_id')
             .eq('competition_id', competitionId)
             .eq('match_uuid', matchUuid);
         (susRows || []).forEach(r => r.player_id != null && suspendedIds.add(r.player_id));
+        if (roundId != null) {
+            const { data: injRows } = await sb.from('match_injuries')
+                .select('player_id, origin_round, matches_out')
+                .eq('competition_id', competitionId);
+            (injRows || []).forEach(r => {
+                const from = r.origin_round, out = r.matches_out ?? 1;
+                if (r.player_id != null && from != null && from < roundId && roundId <= from + out) injuredIds.add(r.player_id);
+            });
+        }
     }
-    const homeAvailable = homeEnriched.filter(p => !suspendedIds.has(p.id));
-    const awayAvailable = awayEnriched.filter(p => !suspendedIds.has(p.id));
+    const unavailable = new Set([...suspendedIds, ...injuredIds]);
+    const homeAvailable = homeEnriched.filter(p => !unavailable.has(p.id));
+    const awayAvailable = awayEnriched.filter(p => !unavailable.has(p.id));
 
     // ── Calidad efectiva de cada jugador = OVR + rendimiento acumulado ──────
     // Combina dos factores para decidir el XI y la fuerza del partido:
@@ -930,6 +942,7 @@ const priorFor = (pos) => {
     const lineup = { home: [...homeStarters], away: [...awayStarters] }; // en el campo (muta con cambios)
     const played = { home: [...homeStarters], away: [...awayStarters] }; // TODOS los que jugaron (para ratings)
     const subs = { home: [], away: [] };    // eventos de cambio {off, on, minute}
+    const injuries = { home: [], away: [] }; // {player, minute, matchesOut}
     const subsUsed = { home: 0, away: 0 };
     const MAX_SUBS = 5;
     [...homeStarters, ...awayStarters].forEach(p => { p._onMin = 0; p._offMin = 90; });
@@ -962,6 +975,32 @@ const priorFor = (pos) => {
             off._offMin = minute; on._onMin = minute; on._offMin = 90;
             subs[side].push({ off, on, minute });
             subsUsed[side]++;
+        }
+    };
+
+    // Lesiones en juego: el lesionado deja el campo (baja 1-4 partidos) y, si hay
+    // banquillo y quedan cambios, entra un suplente (cambio forzado, aparece en la
+    // timeline); si no, el equipo se queda con uno menos.
+    const INJURY_LAMBDA = 0.4; // lesiones por equipo y partido (~0.8/partido)
+    const injuryDuration = () => { const r = Math.random(); return r < 0.55 ? 1 : r < 0.82 ? 2 : r < 0.95 ? 3 : 4; };
+    const runInjuries = (side, s) => {
+        for (let i = poisson(INJURY_LAMBDA / N_SEG); i > 0; i--) {
+            const pool = onPitch(side);
+            if (pool.length <= 7) break;
+            const p = pool[Math.floor(Math.random() * pool.length)];
+            const minute = segMinute(s);
+            lineup[side] = lineup[side].filter(x => x.id !== p.id);
+            p._offMin = minute;
+            injuries[side].push({ player: p, minute, matchesOut: injuryDuration() });
+            if (bench[side].length && subsUsed[side] < MAX_SUBS) {
+                const on = bench[side][0];
+                bench[side] = bench[side].filter(x => x.id !== on.id);
+                lineup[side] = lineup[side].concat(on);
+                played[side].push(on);
+                on._onMin = minute; on._offMin = 90;
+                subs[side].push({ off: p, on, minute });
+                subsUsed[side]++;
+            }
         }
     };
 
@@ -1023,7 +1062,9 @@ const priorFor = (pos) => {
         runCards(homeYellowLambda, homeStraightRed, 'home', homeYellows, homeReds);
         runCards(awayYellowLambda, awayStraightRed, 'away', awayYellows, awayReds);
 
-        // Cambios al final del tramo (reaccionan al marcador YA actualizado).
+        // Lesiones del tramo (pueden forzar un cambio) y luego cambios tácticos.
+        runInjuries('home', s);
+        runInjuries('away', s);
         makeSubs('home', s, homeGoals - awayGoals);
         makeSubs('away', s, awayGoals - homeGoals);
     }
@@ -1196,7 +1237,10 @@ const priorFor = (pos) => {
     if (awayReds.length) header.push(`-- ROJAS ${teamLabel(awayTeam)}: ${awayReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
     if (subs.home.length) header.push(`-- CAMBIOS ${teamLabel(homeTeam)}: ${subs.home.map(s => `${s.on.name}↔${s.off.name}(${s.minute}')`).join(', ')}`);
     if (subs.away.length) header.push(`-- CAMBIOS ${teamLabel(awayTeam)}: ${subs.away.map(s => `${s.on.name}↔${s.off.name}(${s.minute}')`).join(', ')}`);
+    if (injuries.home.length) header.push(`-- LESIONES ${teamLabel(homeTeam)}: ${injuries.home.map(j => `${j.player.name}(${j.minute}', ${j.matchesOut}p)`).join(', ')}`);
+    if (injuries.away.length) header.push(`-- LESIONES ${teamLabel(awayTeam)}: ${injuries.away.map(j => `${j.player.name}(${j.minute}', ${j.matchesOut}p)`).join(', ')}`);
     if (suspendedIds.size) header.push(`-- SANCIONADOS (fuera del XI): ${suspendedIds.size} jugador(es)`);
+    if (injuredIds.size) header.push(`-- LESIONADOS (fuera del XI): ${injuredIds.size} jugador(es)`);
     if (suspensionRows.length) header.push(`-- NUEVAS SANCIONES (próx. partido): ${suspensionRows.map(s => `#${s.playerId}(${s.reason === 'red_card' ? 'roja' : '5ª amarilla'})`).join(', ')}`);
     if (homeScorers.length) header.push(`-- GOLES ${teamLabel(homeTeam)}: ${homeScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
     if (awayScorers.length) header.push(`-- GOLES ${teamLabel(awayTeam)}: ${awayScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
@@ -1227,6 +1271,10 @@ const priorFor = (pos) => {
         if (subs.home.length + subs.away.length > 0) {
             sql.push('', `-- 3c. match_substitutions`);
             sql.push(substitutionsInsert([...subs.home.map(s => ({ ...s, teamId: homeId })), ...subs.away.map(s => ({ ...s, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
+        }
+        if (injuries.home.length + injuries.away.length > 0) {
+            sql.push('', `-- 3d. match_injuries`);
+            sql.push(injuriesInsert([...injuries.home.map(j => ({ ...j, teamId: homeId })), ...injuries.away.map(j => ({ ...j, teamId: awayId }))], matchId, matchUuid, competitionId, season, roundId, false));
         }
         sql.push('', `-- 4. match_player_ratings`);
         sql.push(ratingsInsert([
@@ -1270,6 +1318,10 @@ const priorFor = (pos) => {
         if (subs.home.length + subs.away.length > 0) {
             sql.push('');
             sql.push(substitutionsInsert([...subs.home.map(s => ({ ...s, teamId: homeId })), ...subs.away.map(s => ({ ...s, teamId: awayId }))], null, null, competitionId, season, true));
+        }
+        if (injuries.home.length + injuries.away.length > 0) {
+            sql.push('');
+            sql.push(injuriesInsert([...injuries.home.map(j => ({ ...j, teamId: homeId })), ...injuries.away.map(j => ({ ...j, teamId: awayId }))], null, null, competitionId, season, roundId ?? null, true));
         }
         sql.push('');
         sql.push(ratingsInsert([
@@ -1328,6 +1380,19 @@ function redCardsInsert(reds, matchId, matchUuid, competitionId, season, useVars
     return `${indent}INSERT INTO match_red_cards (match_id, match_uuid, league_team_id, player_id, minute, competition_id, season)
 ${indent}VALUES
 ${values};`;
+}
+
+function injuriesInsert(injList, matchId, matchUuid, competitionId, season, originRound, useVars) {
+    const matchIdExpr = useVars ? 'v_match_id' : sqlStr(matchId);
+    const matchUuidExpr = useVars ? 'v_match_uuid' : sqlNum(matchUuid);
+    const indent = useVars ? '  ' : '';
+    const values = injList.map(j =>
+        `${indent}  (${matchIdExpr}, ${matchUuidExpr}, ${j.teamId}, ${j.player.id}, ${competitionId}, ${sqlStr(season)}, ${j.matchesOut}, ${originRound == null ? 'NULL' : originRound}, ${j.minute})`
+    ).join(',\n');
+    return `${indent}INSERT INTO match_injuries (match_id, match_uuid, league_team_id, player_id, competition_id, season, matches_out, origin_round, minute)
+${indent}VALUES
+${values}
+${indent}ON CONFLICT (match_id, player_id) DO NOTHING;`;
 }
 
 function substitutionsInsert(subsList, matchId, matchUuid, competitionId, season, useVars) {
