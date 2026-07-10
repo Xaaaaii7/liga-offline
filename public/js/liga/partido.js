@@ -133,7 +133,8 @@ const safeUrl = (url) => {
     redCardsResult,
     yellowCardsResult,
     otherJornadaResult,
-    refereeResult
+    refereeResult,
+    subsResult
   ] = await Promise.all([
     supa.from('league_teams').select('id, club_id, display_name, nickname, clubs(name, crest_url)').in('id', [homeTeamId, awayTeamId]),
     supa.from('goal_events').select('*, players(name)').eq('match_uuid', matchUuid).order('id'),
@@ -145,7 +146,8 @@ const safeUrl = (url) => {
     supa.from('match_red_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid),
     supa.from('match_yellow_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid),
     otherJornadaPromise,
-    refereePromise
+    refereePromise,
+    supa.from('match_substitutions').select('player_off_id, player_on_id, league_team_id, minute').eq('match_uuid', matchUuid).order('minute')
   ]);
 
   const teams = teamsResult.data || [];
@@ -154,6 +156,7 @@ const safeUrl = (url) => {
   const teamStats = teamStatsResult.data || [];
   const redCardsData = redCardsResult.data || [];
   const yellowCardsData = yellowCardsResult.data || [];
+  const substitutionsData = subsResult.data || [];
   const otherJornadaMatches = otherJornadaResult.data || [];
   const cronicas = []; // offline: sin sistema de noticias/crónicas
   match.refereeInfo = refereeResult?.data || null;
@@ -211,7 +214,7 @@ const safeUrl = (url) => {
 
   // Renderizar eventos (timeline)
   renderEventos(root, {
-    goalEvents, redCardsData, yellowCardsData, ratingsRaw,
+    goalEvents, redCardsData, yellowCardsData, substitutionsData, ratingsRaw,
     homeTeamId, awayTeamId, isPlayed, season: competition?.season
   });
 
@@ -1561,7 +1564,7 @@ function renderEventos(root, ctx) {
   const panel = root.querySelector('#panel-eventos');
   if (!panel) return;
 
-  const { goalEvents, redCardsData, yellowCardsData, ratingsRaw, homeTeamId, awayTeamId, isPlayed } = ctx;
+  const { goalEvents, redCardsData, yellowCardsData, substitutionsData, ratingsRaw, homeTeamId, awayTeamId, isPlayed } = ctx;
 
   if (!isPlayed) {
     panel.innerHTML = `<p class="partido-eventos-pending">Partido pendiente.</p>`;
@@ -1622,6 +1625,19 @@ function renderEventos(root, ctx) {
       player_id: r.player_id ?? null,
       name: resolveName(r.player_id),
       sortKey: `r_${i}`
+    });
+  });
+
+  // Cambios
+  (substitutionsData || []).forEach((sub, i) => {
+    const side = sideOf(sub.league_team_id);
+    if (!side) return;
+    events.push({
+      minute: sub.minute ?? null,
+      side, icon: '🔄', label: `sale ${resolveName(sub.player_off_id)}`,
+      player_id: sub.player_on_id ?? null,
+      name: resolveName(sub.player_on_id),
+      sortKey: `s_${i}`
     });
   });
 

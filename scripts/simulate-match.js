@@ -920,14 +920,56 @@ const priorFor = (pos) => {
     const homeScorers = [], awayScorers = [];
     const homeReds = [], awayReds = [];
     const homeYellows = [], awayYellows = [];
-    const onPitch = (starters, side) => starters.filter(p => !sentOff[side].has(p.id));
+
+    // ── Banquillo + estado de la alineación (para SUSTITUCIONES) ──
+    const makeBench = (available, starters) => {
+        const startIds = new Set(starters.map(p => p.id));
+        return available.filter(p => !startIds.has(p.id)).sort((a, b) => b.effOvr - a.effOvr).slice(0, 9);
+    };
+    const bench = { home: makeBench(homeAvailable, homeStarters), away: makeBench(awayAvailable, awayStarters) };
+    const lineup = { home: [...homeStarters], away: [...awayStarters] }; // en el campo (muta con cambios)
+    const played = { home: [...homeStarters], away: [...awayStarters] }; // TODOS los que jugaron (para ratings)
+    const subs = { home: [], away: [] };    // eventos de cambio {off, on, minute}
+    const subsUsed = { home: 0, away: 0 };
+    const MAX_SUBS = 5;
+    [...homeStarters, ...awayStarters].forEach(p => { p._onMin = 0; p._offMin = 90; });
+
+    const onPitch = (side) => lineup[side].filter(p => !sentOff[side].has(p.id));
     const segMinute = (s) => clamp(s * SEG_MIN + 1 + Math.floor(Math.random() * SEG_MIN), 1, s === N_SEG - 1 ? 92 : (s + 1) * SEG_MIN);
+
+    // Sustituciones (min 45+): SALE un amonestado (proteger 2ª amarilla) o el de
+    // menor calidad; ENTRA según el marcador (perdiendo→delantero, ganando→defensa,
+    // si no el mejor del banquillo). Nunca el portero.
+    const makeSubs = (side, s, diff) => {
+        if (s < 3) return;
+        for (let n = poisson(1.0); n > 0; n--) {
+            if (subsUsed[side] >= MAX_SUBS || !bench[side].length) break;
+            const field = onPitch(side).filter(p => p.position !== 'Goalkeeper');
+            if (field.length <= 7) break;
+            const booked = field.filter(p => yellowCount.get(p.id));
+            // Para el cambio "táctico" no sacar a un suplente recién entrado (feo);
+            // sí se puede si está amonestado (proteger 2ª amarilla).
+            const tiredPool = field.filter(p => (p._onMin ?? 0) === 0);
+            const off = booked.length
+                ? booked[Math.floor(Math.random() * booked.length)]
+                : (tiredPool.length ? tiredPool : field).reduce((a, b) => (a.effOvr <= b.effOvr ? a : b));
+            const wantLine = diff < 0 ? 'DEL' : diff > 0 ? 'DEF' : null;
+            const on = (wantLine && bench[side].find(p => groupFromPosition(p.position) === wantLine)) || bench[side][0];
+            const minute = segMinute(s);
+            bench[side] = bench[side].filter(p => p.id !== on.id);
+            lineup[side] = lineup[side].filter(p => p.id !== off.id).concat(on);
+            played[side].push(on);
+            off._offMin = minute; on._onMin = minute; on._offMin = 90;
+            subs[side].push({ off, on, minute });
+            subsUsed[side]++;
+        }
+    };
 
     for (let s = 0; s < N_SEG; s++) {
         const lateness = (s + 0.5) / N_SEG;             // 0.08 … 0.92 (cuánto de avanzado)
         const homeDiff = homeGoals - awayGoals;         // marcador al INICIO del tramo
-        const homeDown = 11 - onPitch(homeStarters, 'home').length; // hombres de menos
-        const awayDown = 11 - onPitch(awayStarters, 'away').length;
+        const homeDown = 11 - onPitch('home').length;   // hombres de menos
+        const awayDown = 11 - onPitch('away').length;
 
         // Game-state: el que gana ataca menos, el que pierde más (crece con lateness).
         const GS_K = 0.11;
@@ -939,26 +981,26 @@ const priorFor = (pos) => {
         const segShotsHomeE = (E_shots_home / N_SEG) * stateOwn(homeDiff) * menOwn(homeDown) * menOpp(awayDown);
         const segShotsAwayE = (E_shots_away / N_SEG) * stateOwn(-homeDiff) * menOwn(awayDown) * menOpp(homeDown);
 
-        const runSide = (segShotsE, sotProb, convProb, starters, side, scorers) => {
+        const runSide = (segShotsE, sotProb, convProb, side, scorers) => {
             const shots = poisson(segShotsE);
             const sot = sampleBinomial(shots, sotProb);
             const goals = sampleBinomial(sot, convProb);
             if (side === 'home') { shotsHomeSim += shots; sotHomeSim += sot; }
             else { shotsAwaySim += shots; sotAwaySim += sot; }
-            const pool = onPitch(starters, side);
+            const pool = onPitch(side);
             for (let g = 0; g < goals && pool.length; g++) {
                 const scorer = sampleWeighted(pool, pool.map(p => p.goalRate));
                 scorers.push({ player: scorer, minute: segMinute(s) });
             }
             return goals;
         };
-        homeGoals += runSide(segShotsHomeE, homeSotProb, homeConvProb, homeStarters, 'home', homeScorers);
-        awayGoals += runSide(segShotsAwayE, awaySotProb, awayConvProb, awayStarters, 'away', awayScorers);
+        homeGoals += runSide(segShotsHomeE, homeSotProb, homeConvProb, 'home', homeScorers);
+        awayGoals += runSide(segShotsAwayE, awaySotProb, awayConvProb, 'away', awayScorers);
 
         // Tarjetas del tramo: amarillas (2ª → roja) + rojas directas.
-        const runCards = (yLambda, rLambda, starters, side, yellows, reds) => {
+        const runCards = (yLambda, rLambda, side, yellows, reds) => {
             for (let i = poisson(yLambda / N_SEG); i > 0; i--) {
-                const pool = onPitch(starters, side);
+                const pool = onPitch(side);
                 if (!pool.length) break;
                 // Un jugador ya amonestado juega con cuidado (o lo cambian) → mucho
                 // menos probable que vea la 2ª (evita exceso de rojas por doble amarilla).
@@ -967,18 +1009,23 @@ const priorFor = (pos) => {
                 yellows.push({ player: p, minute });
                 const c = (yellowCount.get(p.id) || 0) + 1;
                 yellowCount.set(p.id, c);
-                if (c >= 2) { sentOff[side].add(p.id); reds.push({ player: p, minute }); } // 2ª amarilla → roja
+                if (c >= 2) { sentOff[side].add(p.id); p._offMin = minute; reds.push({ player: p, minute }); } // 2ª → roja
             }
             for (let i = poisson(rLambda / N_SEG); i > 0; i--) {
-                const pool = onPitch(starters, side);
+                const pool = onPitch(side);
                 if (!pool.length) break;
                 const p = sampleWeighted(pool, pool.map(x => x.redRate * x.priorCardWeight));
-                sentOff[side].add(p.id);
-                reds.push({ player: p, minute: segMinute(s) });
+                const minute = segMinute(s);
+                sentOff[side].add(p.id); p._offMin = minute;
+                reds.push({ player: p, minute });
             }
         };
-        runCards(homeYellowLambda, homeStraightRed, homeStarters, 'home', homeYellows, homeReds);
-        runCards(awayYellowLambda, awayStraightRed, awayStarters, 'away', awayYellows, awayReds);
+        runCards(homeYellowLambda, homeStraightRed, 'home', homeYellows, homeReds);
+        runCards(awayYellowLambda, awayStraightRed, 'away', awayYellows, awayReds);
+
+        // Cambios al final del tramo (reaccionan al marcador YA actualizado).
+        makeSubs('home', s, homeGoals - awayGoals);
+        makeSubs('away', s, awayGoals - homeGoals);
     }
     const byMinute = (a, b) => a.minute - b.minute;
     homeScorers.sort(byMinute); awayScorers.sort(byMinute);
@@ -1050,7 +1097,10 @@ const priorFor = (pos) => {
 
     // ─── Ratings por jugador ────────────────────────────────────────
     const result = homeGoals > awayGoals ? 'HOME' : awayGoals > homeGoals ? 'AWAY' : 'DRAW';
-    const buildRatings = (starters, scorers, reds, yellows, isHome) => {
+    // Recibe TODOS los que jugaron (titulares + suplentes que entraron). El ajuste
+    // por resultado y la varianza se escalan por minutos jugados (un suplente que
+    // entró tarde apenas se mueve de su base); goles y tarjetas cuentan a pleno.
+    const buildRatings = (playedList, scorers, reds, yellows, isHome) => {
         const goalsBy = {};
         scorers.forEach(s => goalsBy[s.player.id] = (goalsBy[s.player.id] || 0) + 1);
         const redsBy = {};
@@ -1058,10 +1108,12 @@ const priorFor = (pos) => {
         const yellowsBy = {};
         yellows.forEach(y => yellowsBy[y.player.id] = (yellowsBy[y.player.id] || 0) + 1);
         const teamResult = result === 'DRAW' ? 'D' : ((result === 'HOME') === isHome ? 'W' : 'L');
-        return starters.map(p => {
-            let r = p.baseRating + randn() * 0.5;
-            if (teamResult === 'W') r += 0.3;
-            else if (teamResult === 'L') r -= 0.3;
+        return playedList.map(p => {
+            const mins = clamp((p._offMin ?? 90) - (p._onMin ?? 0), 1, 90);
+            const minFrac = mins / 90;
+            let r = p.baseRating + randn() * 0.5 * (0.5 + 0.5 * minFrac);
+            if (teamResult === 'W') r += 0.3 * minFrac;
+            else if (teamResult === 'L') r -= 0.3 * minFrac;
             const g = goalsBy[p.id] || 0;
             if (g > 0) r += 0.6 * g;
             if (p.position === 'Goalkeeper') {
@@ -1077,8 +1129,8 @@ const priorFor = (pos) => {
             return { ...p, rating: Math.round(r * 10) / 10, goalsScored: g, redMinute: redsBy[p.id] ?? null };
         });
     };
-    const homeRated = buildRatings(homeStarters, homeScorers, homeReds, homeYellows, true);
-    const awayRated = buildRatings(awayStarters, awayScorers, awayReds, awayYellows, false);
+    const homeRated = buildRatings(played.home, homeScorers, homeReds, homeYellows, true);
+    const awayRated = buildRatings(played.away, awayScorers, awayReds, awayYellows, false);
 
     // ─── Suspensiones para el SIGUIENTE partido (solo partidos reales) ──────
     // Roja (directa o por doble amarilla) → 1 partido. Acumulación de amarillas:
@@ -1142,6 +1194,8 @@ const priorFor = (pos) => {
     if (awayYellows.length) header.push(`-- AMARILLAS ${teamLabel(awayTeam)}: ${awayYellows.map(y => `${y.player.name}(${y.minute}')`).join(', ')}`);
     if (homeReds.length) header.push(`-- ROJAS ${teamLabel(homeTeam)}: ${homeReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
     if (awayReds.length) header.push(`-- ROJAS ${teamLabel(awayTeam)}: ${awayReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
+    if (subs.home.length) header.push(`-- CAMBIOS ${teamLabel(homeTeam)}: ${subs.home.map(s => `${s.on.name}↔${s.off.name}(${s.minute}')`).join(', ')}`);
+    if (subs.away.length) header.push(`-- CAMBIOS ${teamLabel(awayTeam)}: ${subs.away.map(s => `${s.on.name}↔${s.off.name}(${s.minute}')`).join(', ')}`);
     if (suspendedIds.size) header.push(`-- SANCIONADOS (fuera del XI): ${suspendedIds.size} jugador(es)`);
     if (suspensionRows.length) header.push(`-- NUEVAS SANCIONES (próx. partido): ${suspensionRows.map(s => `#${s.playerId}(${s.reason === 'red_card' ? 'roja' : '5ª amarilla'})`).join(', ')}`);
     if (homeScorers.length) header.push(`-- GOLES ${teamLabel(homeTeam)}: ${homeScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
@@ -1169,6 +1223,10 @@ const priorFor = (pos) => {
         if (homeReds.length + awayReds.length > 0) {
             sql.push('', `-- 3b. match_red_cards`);
             sql.push(redCardsInsert([...homeReds.map(r => ({ ...r, teamId: homeId })), ...awayReds.map(r => ({ ...r, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
+        }
+        if (subs.home.length + subs.away.length > 0) {
+            sql.push('', `-- 3c. match_substitutions`);
+            sql.push(substitutionsInsert([...subs.home.map(s => ({ ...s, teamId: homeId })), ...subs.away.map(s => ({ ...s, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
         }
         sql.push('', `-- 4. match_player_ratings`);
         sql.push(ratingsInsert([
@@ -1208,6 +1266,10 @@ const priorFor = (pos) => {
         if (homeReds.length + awayReds.length > 0) {
             sql.push('');
             sql.push(redCardsInsert([...homeReds.map(r => ({ ...r, teamId: homeId })), ...awayReds.map(r => ({ ...r, teamId: awayId }))], null, null, competitionId, season, true));
+        }
+        if (subs.home.length + subs.away.length > 0) {
+            sql.push('');
+            sql.push(substitutionsInsert([...subs.home.map(s => ({ ...s, teamId: homeId })), ...subs.away.map(s => ({ ...s, teamId: awayId }))], null, null, competitionId, season, true));
         }
         sql.push('');
         sql.push(ratingsInsert([
@@ -1264,6 +1326,18 @@ function redCardsInsert(reds, matchId, matchUuid, competitionId, season, useVars
         `${indent}  (${matchIdExpr}, ${matchUuidExpr}, ${r.teamId}, ${r.player.id}, ${r.minute}, ${competitionId}, ${sqlStr(season)})`
     ).join(',\n');
     return `${indent}INSERT INTO match_red_cards (match_id, match_uuid, league_team_id, player_id, minute, competition_id, season)
+${indent}VALUES
+${values};`;
+}
+
+function substitutionsInsert(subsList, matchId, matchUuid, competitionId, season, useVars) {
+    const matchIdExpr = useVars ? 'v_match_id' : sqlStr(matchId);
+    const matchUuidExpr = useVars ? 'v_match_uuid' : sqlNum(matchUuid);
+    const indent = useVars ? '  ' : '';
+    const values = subsList.map(s =>
+        `${indent}  (${matchIdExpr}, ${matchUuidExpr}, ${s.teamId}, ${s.off.id}, ${s.on.id}, ${s.minute}, ${competitionId}, ${sqlStr(season)})`
+    ).join(',\n');
+    return `${indent}INSERT INTO match_substitutions (match_id, match_uuid, league_team_id, player_off_id, player_on_id, minute, competition_id, season)
 ${indent}VALUES
 ${values};`;
 }

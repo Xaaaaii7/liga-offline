@@ -36,7 +36,7 @@ const uuidList = matches.map(m => m.match_uuid).join(',');
 
 // 1) Reset: borrar filas dependientes y poner goles a NULL.
 await client.query('BEGIN');
-for (const t of ['match_team_stats', 'goal_events', 'match_red_cards', 'match_yellow_cards', 'match_player_ratings']) {
+for (const t of ['match_team_stats', 'goal_events', 'match_red_cards', 'match_yellow_cards', 'match_substitutions', 'match_player_ratings']) {
     const r = await client.query(`DELETE FROM ${t} WHERE match_uuid IN (${uuidList})`);
     console.log(`  borradas ${r.rowCount} filas de ${t}`);
 }
