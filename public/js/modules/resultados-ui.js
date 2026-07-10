@@ -206,6 +206,11 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
             ? `<button type="button" class="btn btn-sm btn-secondary result-simular" data-match-uuid="${p.match_uuid}" onclick="event.stopPropagation()">🤖 Simular</button>`
             : '';
 
+        // Partido IA-vs-IA YA jugado → botón re-simular (vuelve a tirar el resultado).
+        const resimularHTML = (jugado && !esHumano && p.match_uuid)
+            ? `<button type="button" class="btn btn-sm btn-outline result-resimular" data-match-uuid="${p.match_uuid}" onclick="event.stopPropagation()">🔄 Re-simular</button>`
+            : '';
+
         const cityName = getCityForKey(p.local);
         const meteoPlaceholder = cityName
             ? `<div class="result-meteo muted"
@@ -342,8 +347,8 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
           ${(meteoPlaceholder || arbitroChip || predsPillHTML)
             ? `<div class="result-row-extras">${meteoPlaceholder}${arbitroChip}${predsPillHTML}</div>`
             : ''}
-          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML || simularHTML
-            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}${simularHTML}</div>`
+          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML || simularHTML || resimularHTML
+            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}${simularHTML}${resimularHTML}</div>`
             : ''}
         </article>
       `;
@@ -379,6 +384,34 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
                 btn.disabled = false;
                 btn.textContent = prev;
                 alert('No se pudo simular el partido: ' + e.message);
+            }
+        });
+    });
+
+    // Botones "Re-simular" (partidos IA-vs-IA ya jugados) → /api/resimulate:
+    // borra el resultado y los eventos y vuelve a tirar el partido.
+    jornadaWrap.querySelectorAll('.result-resimular').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const uuid = Number(btn.dataset.matchUuid);
+            if (!uuid) return;
+            if (!confirm('¿Re-simular este partido? Se descartará el resultado actual y sus eventos.')) return;
+            const prev = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Re-simulando…';
+            try {
+                const res = await fetch('/api/resimulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ match_uuid: uuid }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                window.location.reload();
+            } catch (e) {
+                console.error('Error re-simulando:', e);
+                btn.disabled = false;
+                btn.textContent = prev;
+                alert('No se pudo re-simular el partido: ' + e.message);
             }
         });
     });

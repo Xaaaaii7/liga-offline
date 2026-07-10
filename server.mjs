@@ -210,6 +210,26 @@ async function simulateMatch(db, matchUuid) {
   await rm(tmpFile).catch(() => {});
 }
 
+// Re-simular un partido YA jugado: borra su resultado, stats y eventos (y los
+// registros hacia adelante que generó: suspensiones por sus rojas, lesiones),
+// pone el marcador a NULL y vuelve a simular. Nota: no cascada a jornadas
+// posteriores — re-tira solo ESTE partido (re-roll casual del resultado).
+async function resimulateMatch(db, matchUuid) {
+  const uuid = parseInt(matchUuid, 10);
+  await db.exec(`
+    DELETE FROM match_team_stats     WHERE match_uuid = ${uuid};
+    DELETE FROM goal_events          WHERE match_uuid = ${uuid};
+    DELETE FROM match_red_cards      WHERE match_uuid = ${uuid};
+    DELETE FROM match_yellow_cards   WHERE match_uuid = ${uuid};
+    DELETE FROM match_substitutions  WHERE match_uuid = ${uuid};
+    DELETE FROM match_injuries       WHERE match_uuid = ${uuid};
+    DELETE FROM match_player_ratings WHERE match_uuid = ${uuid};
+    DELETE FROM player_suspensions   WHERE origin_match_uuid = ${uuid};
+    UPDATE matches SET home_goals = NULL, away_goals = NULL, resolved_administratively = false WHERE match_uuid = ${uuid};
+  `);
+  await simulateMatch(db, uuid);
+}
+
 async function readBodyJson(req) {
   const chunks = [];
   for await (const c of req) chunks.push(c);
@@ -236,6 +256,22 @@ function startStaticServer(db) {
           return res.end(JSON.stringify({ ok: false, error: 'match_uuid inválido' }));
         }
         await simulateMatch(db, uuid);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    }
+    if (req.url === '/api/resimulate' && req.method === 'POST') {
+      try {
+        const body = await readBodyJson(req);
+        const uuid = parseInt(body.match_uuid, 10);
+        if (!Number.isFinite(uuid)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ ok: false, error: 'match_uuid inválido' }));
+        }
+        await resimulateMatch(db, uuid);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: true }));
       } catch (e) {
