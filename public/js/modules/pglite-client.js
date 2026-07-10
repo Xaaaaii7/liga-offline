@@ -44,7 +44,7 @@ let FK_BY_NAME = new Map();
 let FK_BY_PAIR = new Map();
 let PK_BY_TABLE = new Map();
 async function loadFkMeta(db) {
-    const { rows } = await db.query(`
+    const { rows } = await q(db, `
         select tc.constraint_name, kcu.table_name local_table, kcu.column_name local_col,
                ccu.table_name foreign_table, ccu.column_name foreign_col
         from information_schema.table_constraints tc
@@ -60,7 +60,7 @@ async function loadFkMeta(db) {
         if (!FK_BY_PAIR.has(pair)) FK_BY_PAIR.set(pair, []);
         FK_BY_PAIR.get(pair).push(fk);
     }
-    const pk = await db.query(`
+    const pk = await q(db, `
         select tc.table_name, kcu.column_name
         from information_schema.table_constraints tc
         join information_schema.key_column_usage kcu on tc.constraint_name = kcu.constraint_name
@@ -103,6 +103,20 @@ function parseSelect(sel) {
     return { cols, embeds };
 }
 
+// PGlite devuelve int8/numeric como STRING (para no perder precisión); PostgREST
+// los da como número y la app hace math (.toFixed, etc.). Coercemos los tipos
+// numéricos a Number para imitar a PostgREST.
+const NUMERIC_OIDS = new Set([20, 21, 23, 26, 700, 701, 1700]); // int8,int2,int4,oid,float4,float8,numeric
+async function q(db, sql) {
+    const res = await db.query(sql);
+    const nums = (res.fields || []).filter(f => NUMERIC_OIDS.has(f.dataTypeID)).map(f => f.name);
+    if (nums.length) for (const row of res.rows) for (const f of nums) {
+        const v = row[f];
+        if (typeof v === 'string' && v.trim() !== '') { const n = Number(v); if (!Number.isNaN(n)) row[f] = n; }
+    }
+    return res;
+}
+
 const ident = (s) => '"' + String(s).replace(/"/g, '""') + '"';
 const lit = (v) => {
     if (v === null || v === undefined) return 'NULL';
@@ -126,6 +140,13 @@ class Query {
         this._head = false;
         this._payload = null; // insert/update/upsert
         this._onConflict = null;
+        this._embedFilters = []; // filtros alias.col (sobre recurso embebido)
+    }
+    // Filtro comparativo: si la columna lleva punto (alias.col) es un embed filter.
+    _cmp(col, op, val) {
+        if (col.includes('.')) { const [alias, c] = col.split('.'); this._embedFilters.push({ alias, col: c, op, val }); }
+        else this._filters.push(`${ident(col)} ${sqlOp(op)} ${lit(val)}`);
+        return this;
     }
     select(sel = '*', opts = {}) {
         if (this._op === 'select') this._sel = sel; else this._returning = sel;
@@ -137,12 +158,12 @@ class Query {
     update(obj) { this._op = 'update'; this._payload = obj; return this; }
     upsert(rows, opts = {}) { this._op = 'upsert'; this._payload = Array.isArray(rows) ? rows : [rows]; this._onConflict = opts.onConflict || null; return this; }
     delete() { this._op = 'delete'; return this; }
-    eq(c, v) { this._filters.push(`${ident(c)} = ${lit(v)}`); return this; }
-    neq(c, v) { this._filters.push(`${ident(c)} <> ${lit(v)}`); return this; }
-    gt(c, v) { this._filters.push(`${ident(c)} > ${lit(v)}`); return this; }
-    gte(c, v) { this._filters.push(`${ident(c)} >= ${lit(v)}`); return this; }
-    lt(c, v) { this._filters.push(`${ident(c)} < ${lit(v)}`); return this; }
-    lte(c, v) { this._filters.push(`${ident(c)} <= ${lit(v)}`); return this; }
+    eq(c, v) { return this._cmp(c, 'eq', v); }
+    neq(c, v) { return this._cmp(c, 'neq', v); }
+    gt(c, v) { return this._cmp(c, 'gt', v); }
+    gte(c, v) { return this._cmp(c, 'gte', v); }
+    lt(c, v) { return this._cmp(c, 'lt', v); }
+    lte(c, v) { return this._cmp(c, 'lte', v); }
     like(c, p) { this._filters.push(`${ident(c)} LIKE ${lit(p)}`); return this; }
     ilike(c, p) { this._filters.push(`${ident(c)} ILIKE ${lit(p)}`); return this; }
     in(c, arr) { this._filters.push(`${ident(c)} = ANY(${lit(arr)})`); return this; }
@@ -165,12 +186,21 @@ class Query {
     async _run() {
         try {
             const db = await getDb();
+            // Embed filters (alias.col): base rows cuyo recurso embebido cumple → subquery.
+            if (this._embedFilters.length) {
+                const parsed = parseSelect(this._sel);
+                for (const ef of this._embedFilters) {
+                    const emb = parsed.embeds.find(e => e.alias === ef.alias);
+                    const fk = emb ? (emb.fkHint ? FK_BY_NAME.get(emb.fkHint) : pickFk(this.table, emb.table)) : null;
+                    if (fk) this._filters.push(`${ident(fk.localCol)} IN (SELECT ${ident(fk.foreignCol)} FROM ${ident(fk.foreignTable)} WHERE ${ident(ef.col)} ${sqlOp(ef.op)} ${lit(ef.val)})`);
+                }
+            }
             const where = this._filters.length ? ' WHERE ' + this._filters.join(' AND ') : '';
             let data = null, count = null;
 
             if (this._op === 'select') {
                 if (this._count) {
-                    const c = await db.query(`SELECT count(*)::int n FROM ${ident(this.table)}${where}`);
+                    const c = await q(db, `SELECT count(*)::int n FROM ${ident(this.table)}${where}`);
                     count = c.rows[0].n;
                     if (this._head) return { data: null, count, error: null };
                 }
@@ -182,17 +212,17 @@ class Query {
                 const order = this._order.length ? ' ORDER BY ' + this._order.join(', ') : '';
                 const limit = this._limit != null ? ` LIMIT ${this._limit}` : '';
                 const offset = this._offset ? ` OFFSET ${this._offset}` : '';
-                const res = await db.query(`SELECT ${cols} FROM ${ident(this.table)}${where}${order}${limit}${offset}`);
+                const res = await q(db, `SELECT ${cols} FROM ${ident(this.table)}${where}${order}${limit}${offset}`);
                 data = res.rows;
                 await resolveEmbeds(db, this.table, data, parsed.embeds);
             } else if (this._op === 'insert' || this._op === 'upsert') {
                 data = await insertRows(db, this.table, this._payload, this._op === 'upsert' ? this._onConflict : null);
             } else if (this._op === 'update') {
                 const sets = Object.entries(this._payload).map(([k, v]) => `${ident(k)} = ${lit(v)}`).join(', ');
-                const res = await db.query(`UPDATE ${ident(this.table)} SET ${sets}${where} RETURNING *`);
+                const res = await q(db, `UPDATE ${ident(this.table)} SET ${sets}${where} RETURNING *`);
                 data = res.rows;
             } else if (this._op === 'delete') {
-                const res = await db.query(`DELETE FROM ${ident(this.table)}${where} RETURNING *`);
+                const res = await q(db, `DELETE FROM ${ident(this.table)}${where} RETURNING *`);
                 data = res.rows;
             }
 
@@ -236,7 +266,7 @@ async function insertRows(db, table, rows, onConflict) {
         sql += ` ON CONFLICT (${cc}) DO UPDATE SET ${upd}`;
     }
     sql += ' RETURNING *';
-    const res = await db.query(sql);
+    const res = await q(db, sql);
     return res.rows;
 }
 
@@ -252,7 +282,7 @@ async function resolveEmbeds(db, baseTable, rows, embeds) {
             : [...new Set([fk.foreignCol, ...emb.sub.cols, ...embedLocalCols(fk.foreignTable, emb.sub.embeds)])].map(ident).join(', ');
         let related = [];
         if (localVals.length) {
-            const res = await db.query(`SELECT ${subCols} FROM ${ident(fk.foreignTable)} WHERE ${ident(fk.foreignCol)} = ANY(${lit(localVals)})`);
+            const res = await q(db, `SELECT ${subCols} FROM ${ident(fk.foreignTable)} WHERE ${ident(fk.foreignCol)} = ANY(${lit(localVals)})`);
             related = res.rows;
             await resolveEmbeds(db, fk.foreignTable, related, emb.sub.embeds);
         }
@@ -281,7 +311,7 @@ async function rpc(fn, args = {}) {
     try {
         const db = await getDb();
         const params = Object.entries(args || {}).map(([k, v]) => `${ident(k)} => ${lit(v)}`).join(', ');
-        const res = await db.query(`SELECT * FROM ${ident(fn)}(${params})`);
+        const res = await q(db, `SELECT * FROM ${ident(fn)}(${params})`);
         return { data: res.rows, error: null };
     } catch (e) {
         console.error('[pglite-client rpc]', fn, e);
