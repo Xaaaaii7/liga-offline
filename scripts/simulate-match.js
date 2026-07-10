@@ -412,17 +412,31 @@ const computeH2HFactor = (h2h, teamIdsA) => {
     };
 };
 
-const positionPriors = {
-    Attacker: { goalRate: 0.35, cardWeight: 0.7 },
-    Offence: { goalRate: 0.35, cardWeight: 0.7 },
-    Forward: { goalRate: 0.35, cardWeight: 0.7 },
-    Midfielder: { goalRate: 0.08, cardWeight: 1.0 },
-    Midfield: { goalRate: 0.08, cardWeight: 1.0 },
-    Defender: { goalRate: 0.03, cardWeight: 1.5 },
-    Defence: { goalRate: 0.03, cardWeight: 1.5 },
-    Goalkeeper: { goalRate: 0.0, cardWeight: 0.2 },
+// Prior de goles/tarjetas por posición. Se apoya en groupFromPosition (que
+// clasifica bien TODAS las variantes del catálogo: Centre-Forward, Centre-Back,
+// Central Midfield, Right-Back, wingers…), con matiz dentro de cada línea. Antes
+// era una tabla de claves exactas y la mayoría de posiciones reales (incluido
+// Centre-Forward, el '9') caían a un default 0.1 → los goles NO eran
+// proporcionales (delantero ≈ central). goalRate marca la probabilidad relativa
+// de anotar: delantero > mediapunta > medio > pivote/defensa > portero.
+const priorFor = (pos) => {
+    const p = (pos || '').toLowerCase();
+    const g = groupFromPosition(pos);
+    if (g === 'POR') return { goalRate: 0.0, cardWeight: 0.2 };
+    if (g === 'DEF') return { goalRate: 0.03, cardWeight: 1.5 };
+    if (g === 'DEL') {
+        // extremos marcan bastante pero menos que un '9' puro
+        return p.includes('wing')
+            ? { goalRate: 0.22, cardWeight: 0.8 }
+            : { goalRate: 0.35, cardWeight: 0.7 };
+    }
+    if (g === 'MC') {
+        if (p.includes('attack')) return { goalRate: 0.14, cardWeight: 0.9 }; // mediapunta
+        if (p.includes('defensive')) return { goalRate: 0.04, cardWeight: 1.2 }; // pivote
+        return { goalRate: 0.08, cardWeight: 1.0 }; // medio
+    }
+    return { goalRate: 0.06, cardWeight: 1.0 }; // desconocido / None
 };
-const priorFor = (pos) => positionPriors[pos] || { goalRate: 0.1, cardWeight: 1.0 };
 
 // ──────────────────── Main ──────────────────────────────────────────
 (async () => {

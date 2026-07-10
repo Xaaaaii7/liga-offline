@@ -15,7 +15,7 @@ import {
 import { getCompetitionBySlug } from '../modules/competition-data.js';
 import { loadCompetitionTheme } from '../modules/theme-loader.js';
 import { isCompetitionAdmin } from '../modules/competition-permissions.js';
-import { FORMATION_TEMPLATES, DEFAULT_SYSTEM, groupFromPosition } from '../modules/formation.js';
+import { FORMATION_TEMPLATES, groupFromPosition } from '../modules/formation.js';
 import {
   loadScorerStateForMatch,
   getScorerState,
@@ -885,56 +885,55 @@ function renderLineup(root, ratingsRaw, redCardsData, yellowCardsData, homeTeam,
   const awayStarters = awayRatings.slice(0, 11);
   const awaySubs = awayRatings.slice(11);
 
-  // Determinar formación inferida por posición
-  const detectFormation = (starters) => {
-    const counts = { POR: 0, DEF: 0, MC: 0, DEL: 0 };
+  // Agrupa el XI por línea (posición desconocida → medio, neutro).
+  const groupStartersByLine = (starters) => {
+    const byLine = { POR: [], DEF: [], MC: [], DEL: [] };
     starters.forEach(p => {
-      const pos = p.players?.position || null;
-      const line = groupFromPosition(pos);
-      if (line) counts[line]++;
+      const line = groupFromPosition(p.players?.position) || 'MC';
+      byLine[line].push(p);
     });
-    const def = counts.DEF;
-    const mc = counts.MC;
-    const del = counts.DEL;
-    const key = `${def}-${mc}-${del}`;
-    return FORMATION_TEMPLATES[key] ? key : DEFAULT_SYSTEM;
+    return byLine;
   };
 
-  const homeFormation = detectFormation(homeStarters);
-  const awayFormation = detectFormation(awayStarters);
+  // Plantilla de slots con EXACTAMENTE los jugadores por línea que tiene el XI.
+  // Si la composición coincide con una formación conocida, se usa su plantilla
+  // (coordenadas cuidadas); si no, se generan posiciones repartidas. Así cada
+  // jugador cae SIEMPRE en un slot de su propia línea y nunca hay overflow que
+  // coloque, p.ej., un defensa en un hueco de delantero.
+  const templateForCounts = (nDef, nMc, nDel) => {
+    const key = `${nDef}-${nMc}-${nDel}`;
+    if (FORMATION_TEMPLATES[key]) return FORMATION_TEMPLATES[key];
+    const slots = [{ index: 0, line: 'POR', x: 50, y: 90 }];
+    const band = (n, y, line) => {
+      for (let i = 0; i < n; i++) {
+        const x = n === 1 ? 50 : Math.round(14 + (72 * i) / (n - 1));
+        slots.push({ index: slots.length, line, x, y });
+      }
+    };
+    band(nDef, 74, 'DEF');
+    band(nMc, 50, 'MC');
+    band(nDel, 28, 'DEL');
+    return slots;
+  };
 
-  // Asignar slots por posición
-  const assignSlots = (starters, formation) => {
-    const template = FORMATION_TEMPLATES[formation] || FORMATION_TEMPLATES[DEFAULT_SYSTEM];
-    const byLine = { POR: [], DEF: [], MC: [], DEL: [] };
-    const unknown = [];
-    starters.forEach(p => {
-      const line = groupFromPosition(p.players?.position);
-      if (line && byLine[line]) byLine[line].push(p);
-      else unknown.push(p);
-    });
-
-    // Paso 1: asignar jugadores a sus slots de línea correspondientes
-    const result = template.map(slot => {
-      const pool = byLine[slot.line];
-      return { slot, player: pool.length > 0 ? pool.shift() : null };
-    });
-
-    // Paso 2: los sobrantes de cada línea + desconocidos llenan los huecos vacíos
-    const overflow = [
-      ...byLine.POR, ...byLine.DEF, ...byLine.MC, ...byLine.DEL, ...unknown
-    ];
+  // Asigna cada jugador a un slot de SU línea (garantizado por construcción).
+  const assignSlots = (starters) => {
+    const byLine = groupStartersByLine(starters);
+    const template = templateForCounts(byLine.DEF.length, byLine.MC.length, byLine.DEL.length);
+    const pools = {
+      POR: [...byLine.POR], DEF: [...byLine.DEF], MC: [...byLine.MC], DEL: [...byLine.DEL],
+    };
+    const result = template.map(slot => ({ slot, player: pools[slot.line]?.shift() || null }));
+    // Sobrantes por descuadres raros (p.ej. 2 porteros): rellenan huecos vacíos.
+    const overflow = [...pools.POR, ...pools.DEF, ...pools.MC, ...pools.DEL];
     if (overflow.length) {
-      result.forEach(entry => {
-        if (!entry.player && overflow.length) entry.player = overflow.shift();
-      });
+      result.forEach(entry => { if (!entry.player && overflow.length) entry.player = overflow.shift(); });
     }
-
     return result;
   };
 
-  const homeSlots = assignSlots([...homeStarters], homeFormation);
-  const awaySlots = assignSlots([...awayStarters], awayFormation);
+  const homeSlots = assignSlots([...homeStarters]);
+  const awaySlots = assignSlots([...awayStarters]);
 
   // Renderizar chips de jugadores en el campo
   const renderSlots = (slots, side) => slots.map(({ slot, player }) => {
