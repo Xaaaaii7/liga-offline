@@ -1,0 +1,17 @@
+{
+  "name": "Liga Offline",
+  "short_name": "Liga",
+  "description": "Liga de fútbol offline vs IA — crea competiciones, simula partidos y registra tus resultados de eFootball.",
+  "start_url": "index.html?pglite=1",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f0c",
+  "theme_color": "#0b0f0c",
+  "lang": "es",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -12,6 +12,25 @@ import { renderCompetitionContextBanner } from './modules/competition-context-ba
 import { renderCompetitionHero } from './modules/competition-hero.js';
 import { setupLinkInterceptor } from './modules/link-interceptor.js';
 
+// ── PWA: manifest + service worker (app instalable + offline) ──────────────
+try {
+    if (!document.querySelector('link[rel="manifest"]')) {
+        const l = document.createElement('link');
+        l.rel = 'manifest'; l.href = 'manifest.webmanifest';
+        document.head.appendChild(l);
+    }
+    if (!document.querySelector('meta[name="theme-color"]')) {
+        const m = document.createElement('meta');
+        m.name = 'theme-color'; m.content = '#0b0f0c';
+        document.head.appendChild(m);
+    }
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js').catch(() => {});
+        });
+    }
+} catch (e) { /* PWA opcional: no bloquear la app */ }
+
 // Expose configuration
 window.SUPABASE_CONFIG = Config.SUPABASE_CONFIG;
 
