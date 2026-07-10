@@ -97,11 +97,28 @@ export async function loadSupabaseFactory() {
     return createClient;
 }
 
+// Modo PGlite-en-navegador (sin backend Node/PostgREST). Se activa con ?pglite=1
+// (persiste en localStorage) y se desactiva con ?pglite=0. Por defecto: supabase-js.
+export function usePglite() {
+    try {
+        const q = new URLSearchParams(location.search).get('pglite');
+        if (q === '1') { localStorage.setItem('use-pglite', '1'); return true; }
+        if (q === '0') { localStorage.removeItem('use-pglite'); return false; }
+        return localStorage.getItem('use-pglite') === '1';
+    } catch { return false; }
+}
+
 export async function getSupabaseClient() {
     if (supabaseClient) return supabaseClient;
     if (supabaseClientPromise) return supabaseClientPromise;
 
     supabaseClientPromise = (async () => {
+        if (usePglite()) {
+            const { createPgliteClient } = await import('./pglite-client.js');
+            supabaseClient = createPgliteClient();
+            window.__supabaseClient = supabaseClient;
+            return supabaseClient;
+        }
         const createClient = await loadSupabaseFactory();
 
         const { url, anonKey } = getSupabaseConfig();
