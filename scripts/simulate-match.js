@@ -440,7 +440,7 @@ const priorFor = (pos) => {
 
 // ──────────────────── Main ──────────────────────────────────────────
 (async () => {
-    let matchId, matchUuid, competitionId, season, homeId, awayId, roundType;
+    let matchId, matchUuid, competitionId, season, homeId, awayId, roundType, roundId;
     let existingMatch = false;
     let outputPath = null;
     let homeTeam, awayTeam;
@@ -456,7 +456,7 @@ const priorFor = (pos) => {
         const val = mode === 'matchuuid' ? parseInt(key, 10) : key;
         const { data: m } = await sb
             .from('matches')
-            .select('id, match_uuid, competition_id, season, home_league_team_id, away_league_team_id, home_goals, away_goals, round_type')
+            .select('id, match_uuid, competition_id, season, home_league_team_id, away_league_team_id, home_goals, away_goals, round_type, round_id')
             .eq(col, val).maybeSingle();
         if (!m) { console.error('Partido no encontrado:', key); process.exit(1); }
         if (m.home_goals != null || m.away_goals != null) {
@@ -464,7 +464,7 @@ const priorFor = (pos) => {
         }
         matchId = m.id; matchUuid = m.match_uuid; competitionId = m.competition_id;
         season = m.season; homeId = m.home_league_team_id; awayId = m.away_league_team_id;
-        roundType = m.round_type; existingMatch = true;
+        roundType = m.round_type; roundId = m.round_id; existingMatch = true;
     } else {
         // teams
         const compArg = args[1], hArg = args[2], aArg = args[3];
@@ -724,6 +724,21 @@ const priorFor = (pos) => {
     const homeEnriched = homeSquad.map(enrichPlayer);
     const awayEnriched = awaySquad.map(enrichPlayer);
 
+    // ── Disponibilidad: excluir SANCIONADOS de la convocatoria ──────────────
+    // Solo en partidos reales (hay match_uuid). Se leen las suspensiones creadas
+    // por partidos anteriores (rojas / 5ª amarilla) para ESTE partido. Las
+    // lesiones se añadirán en un paso posterior.
+    const suspendedIds = new Set();
+    if (matchUuid != null) {
+        const { data: susRows } = await sb.from('player_suspensions')
+            .select('player_id')
+            .eq('competition_id', competitionId)
+            .eq('match_uuid', matchUuid);
+        (susRows || []).forEach(r => r.player_id != null && suspendedIds.add(r.player_id));
+    }
+    const homeAvailable = homeEnriched.filter(p => !suspendedIds.has(p.id));
+    const awayAvailable = awayEnriched.filter(p => !suspendedIds.has(p.id));
+
     // ── Calidad efectiva de cada jugador = OVR + rendimiento acumulado ──────
     // Combina dos factores para decidir el XI y la fuerza del partido:
     //   1) OVR de eFootball (calidad intrínseca), y
@@ -746,8 +761,8 @@ const priorFor = (pos) => {
             p.effOvr = p.baseOvr + ratingAdj + goalAdj;
         }
     };
-    attachEffOvr(homeEnriched);
-    attachEffOvr(awayEnriched);
+    attachEffOvr(homeAvailable);
+    attachEffOvr(awayAvailable);
 
     // Sistema táctico de cada equipo, por precedencia:
     //   1) formación configurada en la tabla `formations`
@@ -766,8 +781,8 @@ const priorFor = (pos) => {
         if (seeded && linesForSystem(seeded)) return seeded;
         return inferSystem(players);
     };
-    const homeSystem = await resolveSystem(homeId, homeTeam.club_id, homeEnriched);
-    const awaySystem = await resolveSystem(awayId, awayTeam.club_id, awayEnriched);
+    const homeSystem = await resolveSystem(homeId, homeTeam.club_id, homeAvailable);
+    const awaySystem = await resolveSystem(awayId, awayTeam.club_id, awayAvailable);
 
     // XI titular por líneas: 1 POR + N DEF/MED/DEL según el sistema, cogiendo el
     // MEJOR de cada línea por OVR (apariciones y rating como desempate). Si una
@@ -808,8 +823,8 @@ const priorFor = (pos) => {
         }
         return chosen.slice(0, 11);
     };
-    const homeStarters = pickStarters(homeEnriched, homeSystem);
-    const awayStarters = pickStarters(awayEnriched, awaySystem);
+    const homeStarters = pickStarters(homeAvailable, homeSystem);
+    const awayStarters = pickStarters(awayAvailable, awaySystem);
 
     // ─── Fuerza del partido: OVR del XI (no del equipo entero) + forma ──────
     // Se promedia sobre los 11 TITULARES elegidos (que el rendimiento ya ayudó a
@@ -1065,6 +1080,50 @@ const priorFor = (pos) => {
     const homeRated = buildRatings(homeStarters, homeScorers, homeReds, homeYellows, true);
     const awayRated = buildRatings(awayStarters, awayScorers, awayReds, awayYellows, false);
 
+    // ─── Suspensiones para el SIGUIENTE partido (solo partidos reales) ──────
+    // Roja (directa o por doble amarilla) → 1 partido. Acumulación de amarillas:
+    // al cruzar un múltiplo de 5 en la competición → 1 partido.
+    const suspensionRows = []; // {playerId, teamId, next:{id,match_uuid}, reason}
+    if (matchUuid != null && roundId != null) {
+        const nextMatchFor = async (teamId) => {
+            const { data } = await sb.from('matches')
+                .select('id, match_uuid, round_id')
+                .eq('competition_id', competitionId)
+                .gt('round_id', roundId)
+                .or(`home_league_team_id.eq.${teamId},away_league_team_id.eq.${teamId}`)
+                .order('round_id', { ascending: true })
+                .limit(1);
+            return (data && data[0]) || null;
+        };
+        const priorYellows = async (playerIds) => {
+            const c = {};
+            if (!playerIds.length) return c;
+            const { data } = await sb.from('match_yellow_cards')
+                .select('player_id')
+                .eq('competition_id', competitionId)
+                .in('player_id', playerIds);
+            (data || []).forEach(r => { c[r.player_id] = (c[r.player_id] || 0) + 1; });
+            return c;
+        };
+        const buildTeamSuspensions = async (teamId, reds, yellows) => {
+            const next = await nextMatchFor(teamId);
+            if (!next) return; // sin siguiente partido (última jornada) → nada
+            for (const r of reds) suspensionRows.push({ playerId: r.player.id, teamId, next, reason: 'red_card' });
+            const yThis = {};
+            yellows.forEach(y => { yThis[y.player.id] = (yThis[y.player.id] || 0) + 1; });
+            const ids = Object.keys(yThis).map(Number);
+            const prior = await priorYellows(ids); // amarillas ya en BD (previas a este partido)
+            for (const pid of ids) {
+                const before = prior[pid] || 0;
+                if (Math.floor((before + yThis[pid]) / 5) > Math.floor(before / 5)) {
+                    suspensionRows.push({ playerId: pid, teamId, next, reason: 'yellow_accumulation' });
+                }
+            }
+        };
+        await buildTeamSuspensions(homeId, homeReds, homeYellows);
+        await buildTeamSuspensions(awayId, awayReds, awayYellows);
+    }
+
     // ─── Generar SQL ────────────────────────────────────────────────
     const sql = [];
     const header = [];
@@ -1083,6 +1142,8 @@ const priorFor = (pos) => {
     if (awayYellows.length) header.push(`-- AMARILLAS ${teamLabel(awayTeam)}: ${awayYellows.map(y => `${y.player.name}(${y.minute}')`).join(', ')}`);
     if (homeReds.length) header.push(`-- ROJAS ${teamLabel(homeTeam)}: ${homeReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
     if (awayReds.length) header.push(`-- ROJAS ${teamLabel(awayTeam)}: ${awayReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
+    if (suspendedIds.size) header.push(`-- SANCIONADOS (fuera del XI): ${suspendedIds.size} jugador(es)`);
+    if (suspensionRows.length) header.push(`-- NUEVAS SANCIONES (próx. partido): ${suspensionRows.map(s => `#${s.playerId}(${s.reason === 'red_card' ? 'roja' : '5ª amarilla'})`).join(', ')}`);
     if (homeScorers.length) header.push(`-- GOLES ${teamLabel(homeTeam)}: ${homeScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
     if (awayScorers.length) header.push(`-- GOLES ${teamLabel(awayTeam)}: ${awayScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
     sql.push(header.join('\n'), '');
@@ -1114,6 +1175,10 @@ const priorFor = (pos) => {
             ...homeRated.map(p => ({ ...p, teamId: homeId })),
             ...awayRated.map(p => ({ ...p, teamId: awayId })),
         ], matchId, matchUuid, competitionId, season, false));
+        if (suspensionRows.length) {
+            sql.push('', `-- 4b. player_suspensions (para el siguiente partido)`);
+            sql.push(suspensionsInsert(suspensionRows, matchId, matchUuid, competitionId, season));
+        }
         sql.push('', `-- 5. Actualizar marcador (AL FINAL, ver nota de orden arriba)`);
         // WHERE por match_uuid (único), NO por id (que se repite entre ligas).
         sql.push(`UPDATE matches SET home_goals = ${homeGoals}, away_goals = ${awayGoals} WHERE match_uuid = ${sqlNum(matchUuid)};`);
@@ -1201,6 +1266,16 @@ function redCardsInsert(reds, matchId, matchUuid, competitionId, season, useVars
     return `${indent}INSERT INTO match_red_cards (match_id, match_uuid, league_team_id, player_id, minute, competition_id, season)
 ${indent}VALUES
 ${values};`;
+}
+
+function suspensionsInsert(rows, originMatchId, originMatchUuid, competitionId, season) {
+    const values = rows.map(r =>
+        `  (${r.playerId}, ${r.teamId}, ${sqlStr(r.next.id)}, ${sqlStr(originMatchId)}, ${sqlStr(r.reason)}, ${competitionId}, ${sqlStr(season)}, ${sqlNum(r.next.match_uuid)}, ${sqlNum(originMatchUuid)})`
+    ).join(',\n');
+    return `INSERT INTO player_suspensions (player_id, league_team_id, match_id, origin_match_id, reason, competition_id, season, match_uuid, origin_match_uuid)
+VALUES
+${values}
+ON CONFLICT (player_id, match_id) DO NOTHING;`;
 }
 
 function yellowCardsInsert(yellows, matchId, matchUuid, competitionId, season, useVars) {
