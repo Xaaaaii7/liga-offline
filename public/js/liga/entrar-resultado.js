@@ -10,6 +10,7 @@ import {
   saveYellowCards,
 } from '../modules/entrada-manual-data.js';
 import { escapeHtml } from '../modules/utils.js';
+import { recognizeStats, recognizeRatings } from '../modules/ocr-efootball.js';
 
 const STAT_FIELDS = [
   ['possession', 'Posesión %'], ['shots', 'Tiros'], ['shots_on_target', 'Tiros a puerta'],
@@ -189,6 +190,80 @@ const STAT_FIELDS = [
   const awayReds = setupAddList('away', 'red', existing.away.reds);
   const homeYellows = setupAddList('home', 'yellow', existing.home.yellows);
   const awayYellows = setupAddList('away', 'yellow', existing.away.yellows);
+
+  // ── OCR de fotos → pre-rellena el editor (todo revisable/editable) ──────
+  const normalize = (s) => (s || '').toLowerCase().normalize('NFD')
+    .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const lev = (a, b) => {
+    const m = a.length, n = b.length;
+    if (!m) return n; if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return dp[m][n];
+  };
+  const sim = (a, b) => { a = normalize(a); b = normalize(b); if (!a || !b) return 0; return 1 - lev(a, b) / Math.max(a.length, b.length); };
+  const bestMatch = (name, players) => {
+    let best = null, score = 0;
+    for (const p of players) { const s = sim(name, p.name); if (s > score) { score = s; best = p; } }
+    return score >= 0.55 ? { player: best, score } : null;
+  };
+
+  const setStatus = (id, msg) => { const el = document.getElementById(id); if (el) el.textContent = msg; };
+
+  document.getElementById('ocr-stats-input').addEventListener('change', async (ev) => {
+    const file = ev.target.files?.[0]; if (!file) return;
+    setStatus('ocr-stats-status', 'Leyendo la captura… (puede tardar unos segundos)');
+    try {
+      const res = await recognizeStats(file);
+      // Orientar foto (izq/der) → local/visitante por nombre de equipo.
+      const homeName = match.home?.display_name || match.home?.nickname || '';
+      const awayName = match.away?.display_name || match.away?.nickname || '';
+      const leftIsHome = sim(res.leftName, homeName) >= sim(res.leftName, awayName);
+      const hScore = leftIsHome ? res.score.left : res.score.right;
+      const aScore = leftIsHome ? res.score.right : res.score.left;
+      const hStats = leftIsHome ? res.stats.left : res.stats.right;
+      const aStats = leftIsHome ? res.stats.right : res.stats.left;
+      if (hScore != null) document.getElementById('home-goals').value = hScore;
+      if (aScore != null) document.getElementById('away-goals').value = aScore;
+      let n = 0;
+      for (const [key] of STAT_FIELDS) {
+        if (hStats[key] != null) { const el = document.getElementById(`home-stat-${key}`); if (el) { el.value = hStats[key]; n++; } }
+        if (aStats[key] != null) { const el = document.getElementById(`away-stat-${key}`); if (el) { el.value = aStats[key]; n++; } }
+      }
+      setStatus('ocr-stats-status', `Leído: marcador ${hScore ?? '?'}-${aScore ?? '?'} y ${n} valores de stats. Revisa y corrige.`);
+    } catch (e) {
+      console.error('[OCR stats]', e);
+      setStatus('ocr-stats-status', 'No se pudo leer la imagen: ' + e.message);
+    } finally {
+      ev.target.value = '';
+    }
+  });
+
+  document.getElementById('ocr-ratings-input').addEventListener('change', async (ev) => {
+    const file = ev.target.files?.[0]; if (!file) return;
+    setStatus('ocr-ratings-status', 'Leyendo valoraciones… (puede tardar unos segundos)');
+    try {
+      const res = await recognizeRatings(file);
+      let n = 0, miss = 0;
+      for (const row of res.rows) {
+        const h = bestMatch(row.name, homeSquad);
+        const a = bestMatch(row.name, awaySquad);
+        let side = null, player = null;
+        if (h && (!a || h.score >= a.score)) { side = 'home'; player = h.player; }
+        else if (a) { side = 'away'; player = a.player; }
+        if (player) { const el = document.getElementById(`${side}-rating-${player.id}`); if (el) { el.value = row.rating; n++; } }
+        else miss++;
+      }
+      setStatus('ocr-ratings-status', `Leídas ${n} valoraciones${miss ? ` (${miss} nombres sin casar)` : ''}. Revisa y corrige.`);
+    } catch (e) {
+      console.error('[OCR ratings]', e);
+      setStatus('ocr-ratings-status', 'No se pudo leer la imagen: ' + e.message);
+    } finally {
+      ev.target.value = '';
+    }
+  });
 
   function readStats(side) {
     const stats = {};

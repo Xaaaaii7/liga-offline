@@ -21,6 +21,11 @@
     .er-add-row select { flex: 1; }
     .er-add-row input { width: 5em; }
     .er-list-item { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+    .er-ocr { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+    .er-ocr-zone { display: flex; flex-direction: column; gap: 4px; }
+    .er-ocr-btn { display: inline-block; cursor: pointer; padding: 8px 14px; border: 1px dashed var(--muted); border-radius: 8px; }
+    .er-ocr-btn:hover { border-color: var(--primary); }
+    .er-ocr-hint { font-size: 0.8em; color: var(--muted); max-width: 22em; }
   </style>
 </head>
 
@@ -41,6 +46,21 @@
         <span>-</span>
         <input type="number" id="away-goals" min="0" />
         <span id="away-name">Visitante</span>
+      </div>
+    </section>
+
+    <section class="table-wrap er-ocr">
+      <div class="er-ocr-zone">
+        <label class="er-ocr-btn">📷 Foto de stats
+          <input type="file" id="ocr-stats-input" accept="image/*" hidden />
+        </label>
+        <span class="er-ocr-hint" id="ocr-stats-status">Rellena marcador y stats de equipo desde la captura de eFootball.</span>
+      </div>
+      <div class="er-ocr-zone">
+        <label class="er-ocr-btn">📷 Foto de valoraciones
+          <input type="file" id="ocr-ratings-input" accept="image/*" hidden />
+        </label>
+        <span class="er-ocr-hint" id="ocr-ratings-status">Rellena las notas de los jugadores. Revisa siempre lo leído.</span>
       </div>
     </section>
 
