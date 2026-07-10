@@ -295,16 +295,6 @@ const loadTeamStatsForMatches = async (matchUuids, teamId) => {
     return data || [];
 };
 
-// Carga stats de AMBOS equipos (home y away) para los match_uuids dados
-const loadAllStatsForMatches = async (matchUuids) => {
-    if (!matchUuids.length) return [];
-    const { data } = await sb
-        .from('match_team_stats')
-        .select('match_uuid, league_team_id, shots, shots_on_target')
-        .in('match_uuid', matchUuids);
-    return data || [];
-};
-
 const loadRedCardsHistory = async (teamId, competitionId) => {
     const { data } = await sb
         .from('match_red_cards')
@@ -557,76 +547,11 @@ const priorFor = (pos) => {
     const leagueSotRate = leagueAvgSoT / leagueAvgShots;   // ~0.375
     const leagueConvRate = leagueGoalAvg / leagueAvgSoT;   // ~0.30
 
-    // ─── Cadena: cargar tiros propios y del rival en cada partido ──
-    const allUuids = [...new Set([...homeUuids, ...awayUuids])];
-    const allStatsRows = await loadAllStatsForMatches(allUuids);
-    const shotsByUuidTeam = new Map(); // `${uuid}|${teamId}` -> { shots, sot }
-    for (const r of allStatsRows) {
-        shotsByUuidTeam.set(`${r.match_uuid}|${r.league_team_id}`, {
-            shots: r.shots ?? null,
-            sot: r.shots_on_target ?? null,
-        });
-    }
-    const enrichChain = (history, selfId) => history
-        .map(h => {
-            const own = shotsByUuidTeam.get(`${h.matchUuid}|${selfId}`);
-            const opp = shotsByUuidTeam.get(`${h.matchUuid}|${h.oppId}`);
-            if (!own || !opp || own.shots == null || opp.shots == null) return null;
-            return {
-                ...h,
-                shots: own.shots, sot: own.sot ?? 0,
-                oppShots: opp.shots, oppSot: opp.sot ?? 0,
-            };
-        })
-        .filter(Boolean);
-    const homeChain = enrichChain(homeHist, homeId);
-    const awayChain = enrichChain(awayHist, awayId);
-
-    // Ponderación por similitud de PPG del rival histórico con el rival actual
-    const normChain = (chain, currentOppId, k = 1.0) => {
-        if (!chain.length) return {
-            shots: leagueAvgShots, sot: leagueAvgSoT, goals: leagueGoalAvg,
-            oppShots: leagueAvgShots, oppSot: leagueAvgSoT, oppGoals: leagueGoalAvg,
-            effectiveN: 0,
-        };
-        const currentStrength = teamStrength(currentOppId);
-        const samples = chain.map(h => ({
-            ...h,
-            w: Math.exp(-k * Math.abs(teamStrength(h.oppId) - currentStrength)),
-        }));
-        const wSum = sum(samples.map(s => s.w));
-        if (wSum <= 0) return {
-            shots: leagueAvgShots, sot: leagueAvgSoT, goals: leagueGoalAvg,
-            oppShots: leagueAvgShots, oppSot: leagueAvgSoT, oppGoals: leagueGoalAvg,
-            effectiveN: 0,
-        };
-        const wAvg = (key) => sum(samples.map(s => (s[key] || 0) * s.w)) / wSum;
-        return {
-            shots: wAvg('shots'),
-            sot: wAvg('sot'),
-            goals: wAvg('gf'),
-            oppShots: wAvg('oppShots'),
-            oppSot: wAvg('oppSot'),
-            oppGoals: wAvg('ga'),
-            effectiveN: (wSum * wSum) / sum(samples.map(s => s.w * s.w)),
-        };
-    };
-    const homeNorm = normChain(homeChain, awayId);
-    const awayNorm = normChain(awayChain, homeId);
-
-    // Shrinkage hacia la media de liga
+    // Shrinkage hacia un prior (lo usan las tarjetas rojas más abajo). Antes había
+    // aquí toda una "cadena histórica" (normChain/blendLeague sobre los tiros
+    // propios y del rival) que alimentaba E_shots/puntería/conversión; se retiró
+    // al pasar a baseline fija + fuerza por OVR (era el foco del spiral 0-0).
     const shrink = (value, N, prior, alpha = 8) => (value * N + prior * alpha) / (N + alpha);
-    const blendLeague = (norm) => ({
-        shots: shrink(norm.shots, norm.effectiveN, leagueAvgShots),
-        sot: shrink(norm.sot, norm.effectiveN, leagueAvgSoT),
-        goals: shrink(norm.goals, norm.effectiveN, leagueGoalAvg),
-        oppShots: shrink(norm.oppShots, norm.effectiveN, leagueAvgShots),
-        oppSot: shrink(norm.oppSot, norm.effectiveN, leagueAvgSoT),
-        oppGoals: shrink(norm.oppGoals, norm.effectiveN, leagueGoalAvg),
-        effectiveN: norm.effectiveN,
-    });
-    const homeS = blendLeague(homeNorm);
-    const awayS = blendLeague(awayNorm);
 
     // ── Tiros esperados, p(tiro a puerta), p(a puerta→gol) ──
     // TODO anclado a la baseline fija de liga. Antes salía de las ratios de
@@ -1224,8 +1149,8 @@ const priorFor = (pos) => {
     header.push(`-- Mode: ${mode} | competition_id=${competitionId} | season=${season} | round_type=${roundType ?? 'NULL'}`);
     header.push(`-- Cadena ${teamLabel(homeTeam)}: tiros_esp=${E_shots_home.toFixed(1)}, p(a_puerta)=${(homeSotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(homeConvProb * 100).toFixed(0)}% → muestra (6 tramos) tiros=${shotsHomeSim}, a_puerta=${sotHomeSim}, goles=${homeGoals}`);
     header.push(`-- Cadena ${teamLabel(awayTeam)}: tiros_esp=${E_shots_away.toFixed(1)}, p(a_puerta)=${(awaySotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(awayConvProb * 100).toFixed(0)}% → muestra (6 tramos) tiros=${shotsAwaySim}, a_puerta=${sotAwaySim}, goles=${awayGoals}`);
-    header.push(`-- Partidos competición: home=${homeHist.length} (Nef=${homeNorm.effectiveN.toFixed(1)}), away=${awayHist.length} (Nef=${awayNorm.effectiveN.toFixed(1)}) | H2H global: ${h2h.count} | Elo: ${eloHome ?? 'n/a'}/${eloAway ?? 'n/a'}`);
-    header.push(`-- PPG: ${teamLabel(homeTeam)}=${teamStrength(homeId).toFixed(2)}, ${teamLabel(awayTeam)}=${teamStrength(awayId).toFixed(2)} (liga=${leaguePPG.toFixed(2)}, ponderación por similitud k=1.0)`);
+    header.push(`-- Partidos competición: home=${homeHist.length}, away=${awayHist.length} | H2H global: ${h2h.count} | Elo: ${eloHome ?? 'n/a'}/${eloAway ?? 'n/a'}`);
+    header.push(`-- PPG: ${teamLabel(homeTeam)}=${teamStrength(homeId).toFixed(2)}, ${teamLabel(awayTeam)}=${teamStrength(awayId).toFixed(2)} (liga=${leaguePPG.toFixed(2)})`);
     const ovrTxt = (o) => o == null ? 'n/a' : o.toFixed(1);
     const sgn = (v) => (v >= 0 ? '+' : '') + v.toFixed(1);
     header.push(`-- Táctica ${teamLabel(homeTeam)}: ${homeSystem} | OVR XI=${ovrTxt(homeOvr)} (atk=${ovrTxt(homeAtkOvr)}, def=${ovrTxt(homeDefOvr)}) forma=${sgn(homeFormAdj)} → mul_tiros=${ovrMulHome.toFixed(2)}`);
