@@ -169,7 +169,7 @@ db-channel-enabled = false
 // gateway real de Supabase). Nuestro PostgREST está montado en la raíz, así
 // que este único servidor traduce `/rest/v1/*` -> PostgREST y sirve el resto
 // como estático - un solo origen, sin CORS que gestionar.
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.wasm': 'application/wasm', '.data': 'application/octet-stream', '.sql': 'text/plain' };
 
 async function readRequestBody(req) {
   const chunks = [];

@@ -2,3 +2,7 @@ node_modules/
 data/
 bin/
 *.log
+
+# PGlite en navegador (regenerable): vendorizado + seed volcado
+public/vendor/pglite/
+public/seed/
