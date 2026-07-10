@@ -862,8 +862,6 @@ const priorFor = (pos) => {
 
     E_shots_home = clamp(E_shots_home, 2, 35);
     E_shots_away = clamp(E_shots_away, 2, 35);
-    const E_shots_home_pre = E_shots_home;
-    const E_shots_away_pre = E_shots_away;
 
     // ─── Tarjetas rojas (antes de goles) ────────────────────────────
     const homeRedHist = await loadRedCardsHistory(homeId, competitionId);
@@ -876,38 +874,6 @@ const priorFor = (pos) => {
     const homeRedLambda = shrink(homeRedsPerMatchRaw, homeHist.length, compRedsPerMatch);
     const awayRedLambda = shrink(awayRedsPerMatchRaw, awayHist.length, compRedsPerMatch);
 
-    const sampleReds = (lambda, starters) => {
-        let count = poisson(lambda);
-        count = Math.min(count, 2);
-        if (!count || !starters.length) return [];
-        const reds = [];
-        const available = [...starters];
-        for (let i = 0; i < count; i++) {
-            if (!available.length) break;
-            const weights = available.map(p => p.redRate * p.priorCardWeight);
-            const picked = sampleWeighted(available, weights);
-            // minuto con sesgo a segundo tiempo: Beta(2, 1.5)*90
-            const minute = clamp(Math.round(sampleBeta(2, 1.5) * 90), 1, 90);
-            reds.push({ player: picked, minute });
-            // remover para evitar roja doble al mismo jugador
-            available.splice(available.indexOf(picked), 1);
-        }
-        return reds.sort((a, b) => a.minute - b.minute);
-    };
-    const homeReds = sampleReds(homeRedLambda, homeStarters);
-    const awayReds = sampleReds(awayRedLambda, awayStarters);
-
-    // Ajustar tiros esperados por expulsión: factor sobre tiempo restante
-    const applyRedFactor = (shots, ownReds, oppReds) => {
-        let factor = 1;
-        for (const r of ownReds) factor *= (r.minute + (90 - r.minute) * 0.70) / 90;
-        for (const r of oppReds) factor *= (r.minute + (90 - r.minute) * 1.20) / 90;
-        return clamp(shots * factor, 1, 40);
-    };
-    E_shots_home = applyRedFactor(E_shots_home, homeReds, awayReds);
-    E_shots_away = applyRedFactor(E_shots_away, awayReds, homeReds);
-
-    // ─── Muestreo cadena: tiros → a puerta → goles ───────────────
     const sampleBinomial = (n, p) => {
         if (n <= 0 || p <= 0) return 0;
         if (p >= 1) return n;
@@ -915,32 +881,94 @@ const priorFor = (pos) => {
         for (let i = 0; i < n; i++) if (Math.random() < p) k++;
         return k;
     };
-    const shotsHomeSim = poisson(E_shots_home);
-    const shotsAwaySim = poisson(E_shots_away);
-    const sotHomeSim = sampleBinomial(shotsHomeSim, homeSotProb);
-    const sotAwaySim = sampleBinomial(shotsAwaySim, awaySotProb);
-    const homeGoals = sampleBinomial(sotHomeSim, homeConvProb);
-    const awayGoals = sampleBinomial(sotAwaySim, awayConvProb);
 
-    // ─── Goleadores ────────────────────────────────────────────────
-    const pickScorers = (starters, nGoals, reds) => {
-        if (!nGoals || !starters.length) return [];
-        const expelledBefore = (minute) => reds.filter(r => r.minute <= minute).map(r => r.player.id);
-        const result = [];
-        for (let i = 0; i < nGoals; i++) {
-            // minuto aleatorio (no correlacionado con rojas pero evitaremos expulsados hasta ese minuto)
-            const minute = clamp(Math.floor(Math.random() * 90) + 1, 1, 93);
-            const expelled = new Set(expelledBefore(minute));
-            const available = starters.filter(p => !expelled.has(p.id));
-            if (!available.length) continue;
-            const weights = available.map(p => p.goalRate);
-            const picked = sampleWeighted(available, weights);
-            result.push({ player: picked, minute });
-        }
-        return result.sort((a, b) => a.minute - b.minute);
-    };
-    const homeScorers = pickScorers(homeStarters, homeGoals, homeReds);
-    const awayScorers = pickScorers(awayStarters, awayGoals, awayReds);
+    // ─── Simulación por TRAMOS de 15 min ────────────────────────────
+    // En vez de muestrear el partido de una, se juega en 6 segmentos que
+    // arrastran estado (marcador + expulsados). Así las rojas afectan de verdad
+    // al resto del partido, y el "game-state" (el que gana se repliega, el que
+    // pierde empuja) da remontadas y goles tardíos realistas — y de paso recorta
+    // las palizas. El momentum tras un gol/racha se dejará para más adelante.
+    const N_SEG = 6, SEG_MIN = 15;
+    const meanCardWeight = (xi) => mean(xi.map(p => p.priorCardWeight ?? 1));
+    // Amarillas esperadas por equipo (~1.9 real), moduladas por agresividad media.
+    const YELLOW_BASE = 1.9;
+    const homeYellowLambda = YELLOW_BASE * meanCardWeight(homeStarters);
+    const awayYellowLambda = YELLOW_BASE * meanCardWeight(awayStarters);
+    // Rojas DIRECTAS ≈ mitad del total (la otra mitad sale de segundas amarillas).
+    const homeStraightRed = homeRedLambda * 0.45;
+    const awayStraightRed = awayRedLambda * 0.45;
+
+    let homeGoals = 0, awayGoals = 0;
+    let shotsHomeSim = 0, shotsAwaySim = 0, sotHomeSim = 0, sotAwaySim = 0;
+    const sentOff = { home: new Set(), away: new Set() };
+    const yellowCount = new Map();          // player.id → nº amarillas (2ª = roja)
+    const homeScorers = [], awayScorers = [];
+    const homeReds = [], awayReds = [];
+    const homeYellows = [], awayYellows = [];
+    const onPitch = (starters, side) => starters.filter(p => !sentOff[side].has(p.id));
+    const segMinute = (s) => clamp(s * SEG_MIN + 1 + Math.floor(Math.random() * SEG_MIN), 1, s === N_SEG - 1 ? 92 : (s + 1) * SEG_MIN);
+
+    for (let s = 0; s < N_SEG; s++) {
+        const lateness = (s + 0.5) / N_SEG;             // 0.08 … 0.92 (cuánto de avanzado)
+        const homeDiff = homeGoals - awayGoals;         // marcador al INICIO del tramo
+        const homeDown = 11 - onPitch(homeStarters, 'home').length; // hombres de menos
+        const awayDown = 11 - onPitch(awayStarters, 'away').length;
+
+        // Game-state: el que gana ataca menos, el que pierde más (crece con lateness).
+        const GS_K = 0.11;
+        const stateOwn = (diff) => clamp(1 - GS_K * diff * lateness, 0.7, 1.35);
+        // Rojas: menos hombres → menos tiros propios y más del rival (~15% por hombre).
+        const menOwn = (down) => Math.max(0.4, 1 - 0.15 * down);
+        const menOpp = (down) => 1 + 0.15 * down;
+
+        const segShotsHomeE = (E_shots_home / N_SEG) * stateOwn(homeDiff) * menOwn(homeDown) * menOpp(awayDown);
+        const segShotsAwayE = (E_shots_away / N_SEG) * stateOwn(-homeDiff) * menOwn(awayDown) * menOpp(homeDown);
+
+        const runSide = (segShotsE, sotProb, convProb, starters, side, scorers) => {
+            const shots = poisson(segShotsE);
+            const sot = sampleBinomial(shots, sotProb);
+            const goals = sampleBinomial(sot, convProb);
+            if (side === 'home') { shotsHomeSim += shots; sotHomeSim += sot; }
+            else { shotsAwaySim += shots; sotAwaySim += sot; }
+            const pool = onPitch(starters, side);
+            for (let g = 0; g < goals && pool.length; g++) {
+                const scorer = sampleWeighted(pool, pool.map(p => p.goalRate));
+                scorers.push({ player: scorer, minute: segMinute(s) });
+            }
+            return goals;
+        };
+        homeGoals += runSide(segShotsHomeE, homeSotProb, homeConvProb, homeStarters, 'home', homeScorers);
+        awayGoals += runSide(segShotsAwayE, awaySotProb, awayConvProb, awayStarters, 'away', awayScorers);
+
+        // Tarjetas del tramo: amarillas (2ª → roja) + rojas directas.
+        const runCards = (yLambda, rLambda, starters, side, yellows, reds) => {
+            for (let i = poisson(yLambda / N_SEG); i > 0; i--) {
+                const pool = onPitch(starters, side);
+                if (!pool.length) break;
+                // Un jugador ya amonestado juega con cuidado (o lo cambian) → mucho
+                // menos probable que vea la 2ª (evita exceso de rojas por doble amarilla).
+                const p = sampleWeighted(pool, pool.map(x => x.priorCardWeight * (yellowCount.get(x.id) ? 0.3 : 1)));
+                const minute = segMinute(s);
+                yellows.push({ player: p, minute });
+                const c = (yellowCount.get(p.id) || 0) + 1;
+                yellowCount.set(p.id, c);
+                if (c >= 2) { sentOff[side].add(p.id); reds.push({ player: p, minute }); } // 2ª amarilla → roja
+            }
+            for (let i = poisson(rLambda / N_SEG); i > 0; i--) {
+                const pool = onPitch(starters, side);
+                if (!pool.length) break;
+                const p = sampleWeighted(pool, pool.map(x => x.redRate * x.priorCardWeight));
+                sentOff[side].add(p.id);
+                reds.push({ player: p, minute: segMinute(s) });
+            }
+        };
+        runCards(homeYellowLambda, homeStraightRed, homeStarters, 'home', homeYellows, homeReds);
+        runCards(awayYellowLambda, awayStraightRed, awayStarters, 'away', awayYellows, awayReds);
+    }
+    const byMinute = (a, b) => a.minute - b.minute;
+    homeScorers.sort(byMinute); awayScorers.sort(byMinute);
+    homeReds.sort(byMinute); awayReds.sort(byMinute);
+    homeYellows.sort(byMinute); awayYellows.sort(byMinute);
 
     // ─── Stats de equipo ────────────────────────────────────────────
     // shots y shots_on_target vienen YA de la cadena (coherentes con los goles).
@@ -1007,11 +1035,13 @@ const priorFor = (pos) => {
 
     // ─── Ratings por jugador ────────────────────────────────────────
     const result = homeGoals > awayGoals ? 'HOME' : awayGoals > homeGoals ? 'AWAY' : 'DRAW';
-    const buildRatings = (starters, scorers, reds, isHome) => {
+    const buildRatings = (starters, scorers, reds, yellows, isHome) => {
         const goalsBy = {};
         scorers.forEach(s => goalsBy[s.player.id] = (goalsBy[s.player.id] || 0) + 1);
         const redsBy = {};
         reds.forEach(r => redsBy[r.player.id] = r.minute);
+        const yellowsBy = {};
+        yellows.forEach(y => yellowsBy[y.player.id] = (yellowsBy[y.player.id] || 0) + 1);
         const teamResult = result === 'DRAW' ? 'D' : ((result === 'HOME') === isHome ? 'W' : 'L');
         return starters.map(p => {
             let r = p.baseRating + randn() * 0.5;
@@ -1024,6 +1054,7 @@ const priorFor = (pos) => {
                 const conceded = isHome ? awayGoals : homeGoals;
                 r += (saves - conceded * 0.6) * 0.04;
             }
+            if (yellowsBy[p.id]) r -= 0.15 * yellowsBy[p.id];
             if (redsBy[p.id] != null) {
                 r -= redsBy[p.id] < 30 ? 1.2 : 0.8;
             }
@@ -1031,16 +1062,16 @@ const priorFor = (pos) => {
             return { ...p, rating: Math.round(r * 10) / 10, goalsScored: g, redMinute: redsBy[p.id] ?? null };
         });
     };
-    const homeRated = buildRatings(homeStarters, homeScorers, homeReds, true);
-    const awayRated = buildRatings(awayStarters, awayScorers, awayReds, false);
+    const homeRated = buildRatings(homeStarters, homeScorers, homeReds, homeYellows, true);
+    const awayRated = buildRatings(awayStarters, awayScorers, awayReds, awayYellows, false);
 
     // ─── Generar SQL ────────────────────────────────────────────────
     const sql = [];
     const header = [];
     header.push(`-- Simulated match: ${teamLabel(homeTeam)} ${homeGoals} - ${awayGoals} ${teamLabel(awayTeam)}`);
     header.push(`-- Mode: ${mode} | competition_id=${competitionId} | season=${season} | round_type=${roundType ?? 'NULL'}`);
-    header.push(`-- Cadena ${teamLabel(homeTeam)}: tiros_esp=${E_shots_home.toFixed(1)} (pre-rojas ${E_shots_home_pre.toFixed(1)}), p(a_puerta)=${(homeSotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(homeConvProb * 100).toFixed(0)}% → muestra tiros=${shotsHomeSim}, a_puerta=${sotHomeSim}, goles=${homeGoals}`);
-    header.push(`-- Cadena ${teamLabel(awayTeam)}: tiros_esp=${E_shots_away.toFixed(1)} (pre-rojas ${E_shots_away_pre.toFixed(1)}), p(a_puerta)=${(awaySotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(awayConvProb * 100).toFixed(0)}% → muestra tiros=${shotsAwaySim}, a_puerta=${sotAwaySim}, goles=${awayGoals}`);
+    header.push(`-- Cadena ${teamLabel(homeTeam)}: tiros_esp=${E_shots_home.toFixed(1)}, p(a_puerta)=${(homeSotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(homeConvProb * 100).toFixed(0)}% → muestra (6 tramos) tiros=${shotsHomeSim}, a_puerta=${sotHomeSim}, goles=${homeGoals}`);
+    header.push(`-- Cadena ${teamLabel(awayTeam)}: tiros_esp=${E_shots_away.toFixed(1)}, p(a_puerta)=${(awaySotProb * 100).toFixed(0)}%, p(gol|a_puerta)=${(awayConvProb * 100).toFixed(0)}% → muestra (6 tramos) tiros=${shotsAwaySim}, a_puerta=${sotAwaySim}, goles=${awayGoals}`);
     header.push(`-- Partidos competición: home=${homeHist.length} (Nef=${homeNorm.effectiveN.toFixed(1)}), away=${awayHist.length} (Nef=${awayNorm.effectiveN.toFixed(1)}) | H2H global: ${h2h.count} | Elo: ${eloHome ?? 'n/a'}/${eloAway ?? 'n/a'}`);
     header.push(`-- PPG: ${teamLabel(homeTeam)}=${teamStrength(homeId).toFixed(2)}, ${teamLabel(awayTeam)}=${teamStrength(awayId).toFixed(2)} (liga=${leaguePPG.toFixed(2)}, ponderación por similitud k=1.0)`);
     const ovrTxt = (o) => o == null ? 'n/a' : o.toFixed(1);
@@ -1048,6 +1079,8 @@ const priorFor = (pos) => {
     header.push(`-- Táctica ${teamLabel(homeTeam)}: ${homeSystem} | OVR XI=${ovrTxt(homeOvr)} (atk=${ovrTxt(homeAtkOvr)}, def=${ovrTxt(homeDefOvr)}) forma=${sgn(homeFormAdj)} → mul_tiros=${ovrMulHome.toFixed(2)}`);
     header.push(`-- Táctica ${teamLabel(awayTeam)}: ${awaySystem} | OVR XI=${ovrTxt(awayOvr)} (atk=${ovrTxt(awayAtkOvr)}, def=${ovrTxt(awayDefOvr)}) forma=${sgn(awayFormAdj)} → mul_tiros=${ovrMulAway.toFixed(2)}`);
     header.push(`-- Liga: avg_goles=${leagueGoalAvg.toFixed(2)}, avg_tiros=${leagueAvgShots.toFixed(1)}, avg_a_puerta=${leagueAvgSoT.toFixed(1)} (SoT%=${(leagueSotRate * 100).toFixed(0)}, conv%=${(leagueConvRate * 100).toFixed(0)})`);
+    if (homeYellows.length) header.push(`-- AMARILLAS ${teamLabel(homeTeam)}: ${homeYellows.map(y => `${y.player.name}(${y.minute}')`).join(', ')}`);
+    if (awayYellows.length) header.push(`-- AMARILLAS ${teamLabel(awayTeam)}: ${awayYellows.map(y => `${y.player.name}(${y.minute}')`).join(', ')}`);
     if (homeReds.length) header.push(`-- ROJAS ${teamLabel(homeTeam)}: ${homeReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
     if (awayReds.length) header.push(`-- ROJAS ${teamLabel(awayTeam)}: ${awayReds.map(r => `${r.player.name}(${r.minute}')`).join(', ')}`);
     if (homeScorers.length) header.push(`-- GOLES ${teamLabel(homeTeam)}: ${homeScorers.map(s => `${s.player.name}(${s.minute}')`).join(', ')}`);
@@ -1068,8 +1101,12 @@ const priorFor = (pos) => {
             sql.push('', `-- 2. goal_events`);
             sql.push(goalEventsInsert([...homeScorers.map(s => ({ ...s, teamId: homeId })), ...awayScorers.map(s => ({ ...s, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
         }
+        if (homeYellows.length + awayYellows.length > 0) {
+            sql.push('', `-- 3a. match_yellow_cards`);
+            sql.push(yellowCardsInsert([...homeYellows.map(y => ({ ...y, teamId: homeId })), ...awayYellows.map(y => ({ ...y, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
+        }
         if (homeReds.length + awayReds.length > 0) {
-            sql.push('', `-- 3. match_red_cards`);
+            sql.push('', `-- 3b. match_red_cards`);
             sql.push(redCardsInsert([...homeReds.map(r => ({ ...r, teamId: homeId })), ...awayReds.map(r => ({ ...r, teamId: awayId }))], matchId, matchUuid, competitionId, season, false));
         }
         sql.push('', `-- 4. match_player_ratings`);
@@ -1098,6 +1135,10 @@ const priorFor = (pos) => {
         if (homeScorers.length + awayScorers.length > 0) {
             sql.push('');
             sql.push(goalEventsInsert([...homeScorers.map(s => ({ ...s, teamId: homeId })), ...awayScorers.map(s => ({ ...s, teamId: awayId }))], null, null, competitionId, season, true));
+        }
+        if (homeYellows.length + awayYellows.length > 0) {
+            sql.push('');
+            sql.push(yellowCardsInsert([...homeYellows.map(y => ({ ...y, teamId: homeId })), ...awayYellows.map(y => ({ ...y, teamId: awayId }))], null, null, competitionId, season, true));
         }
         if (homeReds.length + awayReds.length > 0) {
             sql.push('');
@@ -1158,6 +1199,18 @@ function redCardsInsert(reds, matchId, matchUuid, competitionId, season, useVars
         `${indent}  (${matchIdExpr}, ${matchUuidExpr}, ${r.teamId}, ${r.player.id}, ${r.minute}, ${competitionId}, ${sqlStr(season)})`
     ).join(',\n');
     return `${indent}INSERT INTO match_red_cards (match_id, match_uuid, league_team_id, player_id, minute, competition_id, season)
+${indent}VALUES
+${values};`;
+}
+
+function yellowCardsInsert(yellows, matchId, matchUuid, competitionId, season, useVars) {
+    const matchIdExpr = useVars ? 'v_match_id' : sqlStr(matchId);
+    const matchUuidExpr = useVars ? 'v_match_uuid' : sqlNum(matchUuid);
+    const indent = useVars ? '  ' : '';
+    const values = yellows.map(y =>
+        `${indent}  (${matchIdExpr}, ${matchUuidExpr}, ${y.teamId}, ${y.player.id}, ${y.minute}, ${competitionId}, ${sqlStr(season)})`
+    ).join(',\n');
+    return `${indent}INSERT INTO match_yellow_cards (match_id, match_uuid, league_team_id, player_id, minute, competition_id, season)
 ${indent}VALUES
 ${values};`;
 }
