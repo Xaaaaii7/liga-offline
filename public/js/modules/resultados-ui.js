@@ -201,6 +201,12 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
             ? `<a class="btn btn-sm btn-primary result-registrar" href="entrar-resultado.html?match=${p.match_uuid}&comp=${encodeURIComponent(compSlugForLinks)}" onclick="event.stopPropagation()">Registrar resultado</a>`
             : '';
 
+        // Partido de humano YA jugado → editar el resultado (el mismo formulario
+        // carga los datos actuales y permite corregirlos).
+        const editarHTML = (jugado && esHumano && p.match_uuid)
+            ? `<a class="btn btn-sm btn-outline result-editar" href="entrar-resultado.html?match=${p.match_uuid}&comp=${encodeURIComponent(compSlugForLinks)}" onclick="event.stopPropagation()">✏️ Editar resultado</a>`
+            : '';
+
         // Partido IA-vs-IA no jugado → botón simular (llama a /api/simulate).
         const simularHTML = (!jugado && !esHumano && p.match_uuid)
             ? `<button type="button" class="btn btn-sm btn-secondary result-simular" data-match-uuid="${p.match_uuid}" onclick="event.stopPropagation()">🤖 Simular</button>`
@@ -347,8 +353,8 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
           ${(meteoPlaceholder || arbitroChip || predsPillHTML)
             ? `<div class="result-row-extras">${meteoPlaceholder}${arbitroChip}${predsPillHTML}</div>`
             : ''}
-          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML || simularHTML || resimularHTML
-            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}${simularHTML}${resimularHTML}</div>`
+          ${uploadHTML || resultEditScoreHTML || streamStartHTML || registrarHTML || editarHTML || simularHTML || resimularHTML
+            ? `<div class="result-row-actions-row">${uploadHTML}${resultEditScoreHTML}${streamStartHTML}${registrarHTML}${editarHTML}${simularHTML}${resimularHTML}</div>`
             : ''}
         </article>
       `;

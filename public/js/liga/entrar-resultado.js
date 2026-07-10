@@ -92,8 +92,8 @@ const STAT_FIELDS = [
     `).join('');
   }
 
-  function setupAddList(side, kind) {
-    const list = [];
+  function setupAddList(side, kind, initial = []) {
+    const list = [...initial];
     const listEl = document.getElementById(`${side}-${kind}-list`);
     const selectEl = document.getElementById(`${side}-${kind}-select`);
     const minuteEl = document.getElementById(`${side}-${kind}-minute`);
@@ -122,11 +122,39 @@ const STAT_FIELDS = [
       render();
     });
 
+    render(); // pinta los items iniciales (edición de un partido ya jugado)
     return list;
   }
 
   const homeSquad = await loadSquad(match.home?.club_id);
   const awaySquad = await loadSquad(match.away?.club_id);
+  const homeTeamId = match.home?.id;
+  const awayTeamId = match.away?.id;
+
+  // Carga los datos YA guardados del partido para poder EDITARLOS (no solo
+  // rellenar en blanco). El nombre del goleador/tarjeta se resuelve desde la
+  // plantilla por player_id.
+  const nameById = new Map([...homeSquad, ...awaySquad].map(p => [p.id, p.name]));
+  async function loadExisting() {
+    const [geR, rcR, ycR, tsR, prR] = await Promise.all([
+      supabase.from('goal_events').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid).order('minute'),
+      supabase.from('match_red_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid).order('minute'),
+      supabase.from('match_yellow_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid).order('minute'),
+      supabase.from('match_team_stats').select('*').eq('match_uuid', matchUuid),
+      supabase.from('match_player_ratings').select('player_id, rating, league_team_id').eq('match_uuid', matchUuid),
+    ]);
+    const forSide = (rows, teamId) => (rows || []).filter(r => r.league_team_id === teamId);
+    const toItems = (rows) => rows.map(r => ({ player_id: r.player_id, player_name: nameById.get(r.player_id) || '?', minute: r.minute ?? null }));
+    const build = (teamId) => ({
+      scorers: toItems(forSide(geR.data, teamId)),
+      reds: toItems(forSide(rcR.data, teamId)),
+      yellows: toItems(forSide(ycR.data, teamId)),
+      stats: (tsR.data || []).find(s => s.league_team_id === teamId) || null,
+      ratings: forSide(prR.data, teamId),
+    });
+    return { home: build(homeTeamId), away: build(awayTeamId) };
+  }
+  const existing = await loadExisting();
 
   renderStatsInputs(document.getElementById('home-stats'), 'home');
   renderStatsInputs(document.getElementById('away-stats'), 'away');
@@ -139,12 +167,28 @@ const STAT_FIELDS = [
   renderRatings(document.getElementById('home-ratings'), homeSquad, 'home');
   renderRatings(document.getElementById('away-ratings'), awaySquad, 'away');
 
-  const homeScorers = setupAddList('home', 'scorer');
-  const awayScorers = setupAddList('away', 'scorer');
-  const homeReds = setupAddList('home', 'red');
-  const awayReds = setupAddList('away', 'red');
-  const homeYellows = setupAddList('home', 'yellow');
-  const awayYellows = setupAddList('away', 'yellow');
+  // Pre-rellena stats y ratings existentes en los inputs.
+  const prefill = (side, data) => {
+    if (data.stats) {
+      for (const [key] of STAT_FIELDS) {
+        const el = document.getElementById(`${side}-stat-${key}`);
+        if (el && data.stats[key] != null) el.value = data.stats[key];
+      }
+    }
+    data.ratings.forEach(r => {
+      const el = document.getElementById(`${side}-rating-${r.player_id}`);
+      if (el && r.rating != null) el.value = r.rating;
+    });
+  };
+  prefill('home', existing.home);
+  prefill('away', existing.away);
+
+  const homeScorers = setupAddList('home', 'scorer', existing.home.scorers);
+  const awayScorers = setupAddList('away', 'scorer', existing.away.scorers);
+  const homeReds = setupAddList('home', 'red', existing.home.reds);
+  const awayReds = setupAddList('away', 'red', existing.away.reds);
+  const homeYellows = setupAddList('home', 'yellow', existing.home.yellows);
+  const awayYellows = setupAddList('away', 'yellow', existing.away.yellows);
 
   function readStats(side) {
     const stats = {};
@@ -189,6 +233,13 @@ const STAT_FIELDS = [
     results.push(await saveMatchTeamStats(match.id, meta, awayTeamId, readStats('away')));
     results.push(await saveMatchPlayerRatings(match.id, meta, homeTeamId, readRatings(homeSquad, 'home')));
     results.push(await saveMatchPlayerRatings(match.id, meta, awayTeamId, readRatings(awaySquad, 'away')));
+    // Editar = reemplazar: los eventos (goles/tarjetas) hacen INSERT, así que se
+    // borran los previos del partido antes de re-insertar la lista actual (stats
+    // y ratings ya hacen upsert). Va tras las stats para no dejar el partido sin
+    // filas de stats al recalcular resolved_administratively.
+    await supabase.from('goal_events').delete().eq('match_uuid', matchUuid);
+    await supabase.from('match_red_cards').delete().eq('match_uuid', matchUuid);
+    await supabase.from('match_yellow_cards').delete().eq('match_uuid', matchUuid);
     results.push(await saveGoalEvents(match.id, meta, homeTeamId, homeScorers));
     results.push(await saveGoalEvents(match.id, meta, awayTeamId, awayScorers));
     results.push(await saveRedCards(match.id, meta, homeTeamId, homeReds));
