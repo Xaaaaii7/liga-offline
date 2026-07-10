@@ -1,6 +1,6 @@
 // OCR offline de las pantallas de post-partido de eFootball (stats y
-// valoraciones), sin OpenAI. Usa Tesseract.js (cargado de CDN, como supabase-js;
-// vendorizar en local es parte del empaquetado). El preprocesado (recorte por
+// valoraciones), sin OpenAI. Usa Tesseract.js VENDORIZADO en local (public/vendor/tesseract),
+// para funcionar 100% offline. El preprocesado (recorte por
 // proporción + umbral) se hace con canvas → texto negro sobre blanco limpio,
 // que es lo que mejor lee Tesseract sobre el fondo chillón del juego.
 //
@@ -13,9 +13,9 @@ function loadTesseract() {
     if (!tesseractPromise) {
         tesseractPromise = new Promise((resolve, reject) => {
             const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+            s.src = 'vendor/tesseract/tesseract.min.js'; // vendorizado (offline)
             s.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Tesseract no disponible'));
-            s.onerror = () => reject(new Error('No se pudo cargar Tesseract.js (¿sin conexión?)'));
+            s.onerror = () => reject(new Error('No se pudo cargar Tesseract.js'));
             document.head.appendChild(s);
         });
     }
@@ -106,7 +106,7 @@ function parseStatsTable(text) {
 
 export async function recognizeStats(file) {
     const T = await loadTesseract();
-    const worker = await T.createWorker('eng');
+    const worker = await T.createWorker('eng', 1, { workerPath: 'vendor/tesseract/worker.min.js', corePath: 'vendor/tesseract/', langPath: 'vendor/tesseract/lang' });
     try {
         const img = await fileToImage(file);
         const [scoreL, scoreR, headerL, headerR, table] = [
@@ -155,7 +155,7 @@ function parseRatingRows(text) {
 
 export async function recognizeRatings(file) {
     const T = await loadTesseract();
-    const worker = await T.createWorker('eng');
+    const worker = await T.createWorker('eng', 1, { workerPath: 'vendor/tesseract/worker.min.js', corePath: 'vendor/tesseract/', langPath: 'vendor/tesseract/lang' });
     try {
         const img = await fileToImage(file);
         const leftText = await ocr(worker, preprocess(img, REGION.ratingsLeft, { scale: 2 }));

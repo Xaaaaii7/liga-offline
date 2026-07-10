@@ -6,3 +6,4 @@ bin/
 # PGlite en navegador (regenerable): vendorizado + seed volcado
 public/vendor/pglite/
 public/seed/
+public/vendor/tesseract/
