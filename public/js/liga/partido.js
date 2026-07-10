@@ -4,7 +4,6 @@
  */
 
 import { getSupabaseClient } from '../modules/supabase-client.js';
-import { renderNoticiasRelacionadas } from '../modules/noticias-relacionadas.js';
 import {
   getCompetitionFromURL,
   buildURLWithCompetition,
@@ -134,8 +133,7 @@ const safeUrl = (url) => {
     redCardsResult,
     yellowCardsResult,
     otherJornadaResult,
-    refereeResult,
-    cronicaResult
+    refereeResult
   ] = await Promise.all([
     supa.from('league_teams').select('id, club_id, display_name, nickname, clubs(name, crest_url)').in('id', [homeTeamId, awayTeamId]),
     supa.from('goal_events').select('*, players(name)').eq('match_uuid', matchUuid).order('id'),
@@ -147,14 +145,7 @@ const safeUrl = (url) => {
     supa.from('match_red_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid),
     supa.from('match_yellow_cards').select('player_id, league_team_id, minute').eq('match_uuid', matchUuid),
     otherJornadaPromise,
-    refereePromise,
-    // Crónica del partido (1 por partido). Vive solo aquí, no en el feed de noticias.
-    supa.from('noticias')
-      .select('id, titulo, resumen, cuerpo, img, fecha, journalist_id, angle_kind, angle_refs')
-      .eq('angle_kind', 'match_chronicle')
-      .eq('angle_refs->>match_uuid', String(matchUuid))
-      .or('oculta.is.null,oculta.eq.false')
-      .order('fecha', { ascending: false })
+    refereePromise
   ]);
 
   const teams = teamsResult.data || [];
@@ -164,7 +155,7 @@ const safeUrl = (url) => {
   const redCardsData = redCardsResult.data || [];
   const yellowCardsData = yellowCardsResult.data || [];
   const otherJornadaMatches = otherJornadaResult.data || [];
-  const cronicas = cronicaResult?.data || [];
+  const cronicas = []; // offline: sin sistema de noticias/crónicas
   match.refereeInfo = refereeResult?.data || null;
 
   const normalizeTeam = (raw, fallbackName) => raw
@@ -251,26 +242,7 @@ const safeUrl = (url) => {
       homeTeamId, awayTeamId, competitionId, isRanked, homeGoals, awayGoals);
   }
 
-  // Noticias relacionadas con este partido
-  try {
-    const noticiasContainer = document.getElementById('partido-noticias-relacionadas');
-    if (noticiasContainer) {
-      await renderNoticiasRelacionadas(
-        noticiasContainer,
-        { match_uuid: matchUuid },
-        { limit: 5, title: 'En las noticias', excludeKinds: ['match_chronicle'] },
-      );
-    }
-  } catch (e) {
-    console.warn('[partido] noticias-relacionadas:', e?.message);
-  }
-
-  // Comunicados sobre este partido
-  try {
-    await renderPartidoComunicados(matchUuid);
-  } catch (e) {
-    console.warn('[partido] comunicados:', e?.message);
-  }
+  // liga-offline: sin comunicados de managers (sistema excluido).
 
 })();
 
@@ -934,6 +906,14 @@ function renderLineup(root, ratingsRaw, redCardsData, yellowCardsData, homeTeam,
 
   const homeSlots = assignSlots([...homeStarters]);
   const awaySlots = assignSlots([...awayStarters]);
+
+  // Etiqueta de formación para la leyenda (nº de jugadores por línea del XI).
+  const formationLabel = (starters) => {
+    const by = groupStartersByLine(starters);
+    return `${by.DEF.length}-${by.MC.length}-${by.DEL.length}`;
+  };
+  const homeFormation = formationLabel(homeStarters);
+  const awayFormation = formationLabel(awayStarters);
 
   // Renderizar chips de jugadores en el campo
   const renderSlots = (slots, side) => slots.map(({ slot, player }) => {
