@@ -24,7 +24,18 @@ try {
         m.name = 'theme-color'; m.content = '#0b0f0c';
         document.head.appendChild(m);
     }
-    if ('serviceWorker' in navigator) {
+    const inTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__);
+    if (inTauri) {
+        // En Tauri (app de escritorio) los assets YA son locales: el service
+        // worker solo estorba — sirve JS cacheado (cache-first) y bloquea que
+        // se vean los cambios. Lo desregistramos y vaciamos sus cachés.
+        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+            navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+        }
+        if (window.caches && caches.keys) {
+            caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
+        }
+    } else if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('service-worker.js').catch(() => {});
         });
