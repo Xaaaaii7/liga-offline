@@ -12,7 +12,7 @@ import { getSupabaseClient, usePglite } from './supabase-client.js';
 // Node usa los endpoints /api/simulate y /api/resimulate del server.
 async function runSimulate(uuid, { resimulate = false } = {}) {
     if (usePglite()) {
-        const [{ simulateMatchToSql }, { getPgliteDb }] = await Promise.all([
+        const [{ simulateMatchToSql }, { getPgliteDb, flushPglitePersist }] = await Promise.all([
             import('./simulate-engine.js'),
             import('./pglite-client.js'),
         ]);
@@ -34,6 +34,7 @@ async function runSimulate(uuid, { resimulate = false } = {}) {
         const sb = await getSupabaseClient();
         const sql = await simulateMatchToSql(sb, uuid);
         await db.exec(sql);
+        await flushPglitePersist(); // guardar el snapshot antes de que la app recargue
         return;
     }
     const res = await fetch(resimulate ? '/api/resimulate' : '/api/simulate', {

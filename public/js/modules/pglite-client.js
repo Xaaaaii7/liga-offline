@@ -16,12 +16,14 @@ async function applySchemaPatches(db) {
     try {
         const KEY = 'pglite-schema-patch-version';
         const cur = parseInt(localStorage.getItem(KEY) || '0', 10);
-        if (cur >= SCHEMA_PATCH_VERSION) return;
+        if (cur >= SCHEMA_PATCH_VERSION) return false;
         await db.exec(SCHEMA_PATCHES_SQL);
         localStorage.setItem(KEY, String(SCHEMA_PATCH_VERSION));
         console.log(`[PGlite] parches de esquema aplicados (v${SCHEMA_PATCH_VERSION})`);
+        return true;
     } catch (e) {
         console.warn('[PGlite] no se pudieron aplicar parches de esquema:', e && e.message || e);
+        return false;
     }
 }
 
@@ -44,32 +46,79 @@ function showDbFatal(msg) {
     } catch { /* noop */ }
 }
 
-// Borra la BD de PGlite en IndexedDB (para reintentar el seed si quedó vacía).
-async function deletePgliteIdb() {
-    let names = [];
-    try {
-        if (indexedDB.databases) {
-            const dbs = await indexedDB.databases();
-            names = dbs.map(d => d && d.name).filter(n => n && /pglite|liga-offline/i.test(n));
-        }
-    } catch { /* algunos webviews no soportan .databases() */ }
-    if (!names.length) names = ['/pglite/liga-offline', 'pglite/liga-offline', 'liga-offline'];
-    await Promise.all(names.map(n => new Promise(res => {
-        try { const r = indexedDB.deleteDatabase(n); r.onsuccess = r.onerror = r.onblocked = () => res(); }
-        catch { res(); }
-    })));
+// ── Persistencia por SNAPSHOT ────────────────────────────────────────────────
+// PGlite con idb:// hace ~390ms POR QUERY (toca IndexedDB en cada una) → una
+// página con 27 queries tardaba ~10s. En su lugar corremos PGlite EN MEMORIA
+// (lecturas ~2ms) y persistimos un snapshot (dumpDataDir) a IndexedDB SOLO al
+// escribir. dumpDataDir('none') es rápido (~200ms) aunque el blob sea grande;
+// se guarda en UNA clave (se sobrescribe, no crece). Cross-platform.
+const SNAP_DB = 'liga-offline-store';
+const SNAP_STORE = 'kv';
+const SNAP_KEY = 'snapshot';
+
+function openSnapStore() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(SNAP_DB, 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore(SNAP_STORE); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
 }
+async function snapGet() {
+    const idb = await openSnapStore();
+    try {
+        return await new Promise((resolve, reject) => {
+            const r = idb.transaction(SNAP_STORE, 'readonly').objectStore(SNAP_STORE).get(SNAP_KEY);
+            r.onsuccess = () => resolve(r.result || null);
+            r.onerror = () => reject(r.error);
+        });
+    } finally { idb.close(); }
+}
+async function snapPut(blob) {
+    const idb = await openSnapStore();
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = idb.transaction(SNAP_STORE, 'readwrite');
+            tx.objectStore(SNAP_STORE).put(blob, SNAP_KEY);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } finally { idb.close(); }
+}
+
+let _snapDb = null;
+async function persistNow() {
+    if (!_snapDb) return;
+    try {
+        const dump = await _snapDb.dumpDataDir('none'); // rápido; blob grande pero se sobrescribe
+        await snapPut(dump);
+    } catch (e) {
+        // p.ej. cuota de IndexedDB llena: no rompemos la escritura (los datos
+        // siguen en memoria), solo avisamos.
+        console.warn('[PGlite] no se pudo guardar el snapshot:', e && e.message || e);
+    }
+}
+// Coalescing: varias escrituras seguidas comparten un solo dump. El llamante
+// hace `await` para tener durabilidad ANTES de recargar la página.
+let _dirty = false, _persistInFlight = null;
+function persistOnWrite() {
+    _dirty = true;
+    if (_persistInFlight) return _persistInFlight;
+    _persistInFlight = (async () => {
+        await Promise.resolve(); // deja encolar una ráfaga síncrona
+        try { while (_dirty) { _dirty = false; await persistNow(); } }
+        finally { _persistInFlight = null; }
+    })();
+    return _persistInFlight;
+}
+// Para el flujo de simulación, que escribe con db.exec crudo (no pasa por q()).
+export async function flushPglitePersist() { return persistOnWrite(); }
 
 let dbPromise = null;
 async function getDb() {
     if (dbPromise) return dbPromise;
     dbPromise = (async () => {
-        const IDB = 'idb://liga-offline';
-        // ¿la BD tiene ESQUEMA? (existe la tabla clubs). Decidimos el reseed por
-        // existencia de tabla, NUNCA por count de filas: una lectura 0 transitoria
-        // (carrera al navegar, con la página anterior aún cerrando su conexión a
-        // IndexedDB) NO debe disparar el borrado — eso colgaba (deleteDatabase se
-        // bloquea con otra conexión abierta) y podía borrar una BD válida.
+        // ¿la BD tiene ESQUEMA? (existe la tabla clubs) → snapshot válido.
         const hasSchema = async (db) => {
             try { return (await db.query("select to_regclass('public.clubs') as t")).rows[0].t != null; }
             catch { return false; }
@@ -90,33 +139,43 @@ async function getDb() {
         }, 12000);
         try {
             const t0 = performance.now();
-            // 1) abrir la BD persistida
-            console.log('[PGlite] abriendo IndexedDB…'); phase = 'new PGlite(idb)';
-            let db = new PGlite(IDB);
-            await db.waitReady;
-            const tOpen = performance.now();
-            console.log(`[PGlite] abierta en ${(tOpen - t0).toFixed(0)}ms`); phase = 'hasSchema';
-            // 2) ¿ya sembrada? (tabla clubs existe) → devolver TAL CUAL, no tocar.
-            if (await hasSchema(db)) {
-                phase = 'schemaPatches';
-                await applySchemaPatches(db);
-                phase = 'loadFkMeta';
-                await loadFkMeta(db);
-                clearTimeout(watchdog);
-                console.log(`[PGlite] lista (fkMeta ${(performance.now() - tOpen).toFixed(0)}ms)`);
-                return db;
+            let db = null, fresh = false;
+            // 1) ¿hay snapshot? → hidratar PGlite EN MEMORIA desde él (lecturas ~2ms).
+            phase = 'leer snapshot';
+            const snap = await snapGet();
+            if (snap) {
+                console.log(`[PGlite] hidratando desde snapshot (${(snap.size / 1e6).toFixed(1)}MB)…`);
+                phase = 'loadDataDir(snapshot)';
+                db = new PGlite({ loadDataDir: snap });
+                await db.waitReady;
+                if (!(await hasSchema(db))) { // snapshot corrupto → resembrar
+                    console.warn('[PGlite] snapshot sin esquema → resembrando desde seed');
+                    try { await db.close(); } catch { /* noop */ }
+                    db = null;
+                }
             }
-            console.log('[PGlite] sin esquema → sembrando desde el seed'); phase = 'reseed';
-            // 3) BD sin esquema (1er arranque real) → sembrar desde el seed.
-            //    Aquí no hay concurrencia (es la 1ª página), así que borrar es seguro.
-            try { await db.close(); } catch { /* noop */ }
-            await deletePgliteIdb();
-            db = new PGlite(IDB, { loadDataDir: await fetchSeed() });
-            await db.waitReady;
-            if (!(await hasSchema(db))) throw new Error('El seed cargó pero no hay esquema (¿seed corrupto?).');
+            // 2) 1er arranque (o snapshot inválido) → cargar el seed EN MEMORIA.
+            if (!db) {
+                console.log('[PGlite] sembrando desde el seed…');
+                phase = 'loadDataDir(seed)';
+                db = new PGlite({ loadDataDir: await fetchSeed() });
+                await db.waitReady;
+                if (!(await hasSchema(db))) throw new Error('El seed cargó pero no hay esquema (¿seed corrupto?).');
+                fresh = true;
+            }
+            _snapDb = db;
+            const tOpen = performance.now();
+            console.log(`[PGlite] en memoria en ${(tOpen - t0).toFixed(0)}ms`);
+            // 3) parches de esquema (una vez por versión). Si aplicó algo, hay que
+            //    persistir para que el snapshot quede parcheado.
+            phase = 'schemaPatches';
+            const patched = await applySchemaPatches(db);
+            phase = 'loadFkMeta';
             await loadFkMeta(db);
+            // 4) guardar el snapshot inicial (1er arranque) o el parcheado.
+            if (fresh || patched) { phase = 'snapshot'; await persistNow(); }
             clearTimeout(watchdog);
-            console.log(`[PGlite] sembrada desde seed en ${(performance.now() - t0).toFixed(0)}ms`);
+            console.log(`[PGlite] lista (setup ${(performance.now() - tOpen).toFixed(0)}ms)`);
             return db;
         } catch (e) {
             clearTimeout(watchdog);
@@ -230,6 +289,9 @@ async function q(db, sql) {
         const v = row[f];
         if (typeof v === 'string' && v.trim() !== '') { const n = Number(v); if (!Number.isNaN(n)) row[f] = n; }
     }
+    // Escritura → persistir el snapshot a IndexedDB (await: durabilidad antes de
+    // que la app recargue la página). Las lecturas no persisten.
+    if (/^\s*(insert|update|delete)\b/i.test(sql)) await persistOnWrite();
     return res;
 }
 
@@ -428,6 +490,10 @@ async function rpc(fn, args = {}) {
         const db = await getDb();
         const params = Object.entries(args || {}).map(([k, v]) => `${ident(k)} => ${lit(v)}`).join(', ');
         const res = await q(db, `SELECT * FROM ${ident(fn)}(${params})`);
+        // Las RPC van como SELECT (q() no las ve como escritura). Persistimos las
+        // que NO son de solo-lectura (get_/compute_/calculate_/is_) por si el
+        // procedimiento escribió (p.ej. set_active_season, *_draft_draw).
+        if (!/^(get_|compute_|calculate_|is_)/.test(fn)) await persistOnWrite();
         return { data: res.rows, error: null };
     } catch (e) {
         console.error('[pglite-client rpc]', fn, e);
