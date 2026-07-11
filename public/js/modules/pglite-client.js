@@ -48,9 +48,13 @@ async function getDb() {
     if (dbPromise) return dbPromise;
     dbPromise = (async () => {
         const IDB = 'idb://liga-offline';
-        // ¿la BD ya está poblada? (existe el catálogo con filas)
-        const hasCatalog = async (db) => {
-            try { return (await db.query('select count(*)::int c from clubs')).rows[0].c > 0; }
+        // ¿la BD tiene ESQUEMA? (existe la tabla clubs). Decidimos el reseed por
+        // existencia de tabla, NUNCA por count de filas: una lectura 0 transitoria
+        // (carrera al navegar, con la página anterior aún cerrando su conexión a
+        // IndexedDB) NO debe disparar el borrado — eso colgaba (deleteDatabase se
+        // bloquea con otra conexión abierta) y podía borrar una BD válida.
+        const hasSchema = async (db) => {
+            try { return (await db.query("select to_regclass('public.clubs') as t")).rows[0].t != null; }
             catch { return false; }
         };
         const fetchSeed = async () => {
@@ -63,20 +67,26 @@ async function getDb() {
             return blob;
         };
         try {
-            // 1) intentar abrir la BD persistida
+            const t0 = performance.now();
+            // 1) abrir la BD persistida
             let db = new PGlite(IDB);
             await db.waitReady;
-            if (await hasCatalog(db)) { await loadFkMeta(db); return db; }
-            // 2) vacía o sin esquema (1er arranque, o una carga previa que falló):
-            //    cerrar, borrar y recargar desde el seed
+            const tOpen = performance.now();
+            // 2) ¿ya sembrada? (tabla clubs existe) → devolver TAL CUAL, no tocar.
+            if (await hasSchema(db)) {
+                await loadFkMeta(db);
+                console.debug(`[PGlite] abierta en ${(tOpen - t0).toFixed(0)}ms + fkMeta ${(performance.now() - tOpen).toFixed(0)}ms`);
+                return db;
+            }
+            // 3) BD sin esquema (1er arranque real) → sembrar desde el seed.
+            //    Aquí no hay concurrencia (es la 1ª página), así que borrar es seguro.
             try { await db.close(); } catch { /* noop */ }
             await deletePgliteIdb();
             db = new PGlite(IDB, { loadDataDir: await fetchSeed() });
             await db.waitReady;
-            if (!(await hasCatalog(db))) {
-                throw new Error('El seed cargó pero el catálogo sigue vacío (clubs=0). ¿Seed corrupto?');
-            }
+            if (!(await hasSchema(db))) throw new Error('El seed cargó pero no hay esquema (¿seed corrupto?).');
             await loadFkMeta(db);
+            console.debug(`[PGlite] sembrada desde seed en ${(performance.now() - t0).toFixed(0)}ms`);
             return db;
         } catch (e) {
             showDbFatal((e && e.stack) || (e && e.message) || String(e));
