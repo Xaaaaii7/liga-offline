@@ -66,18 +66,28 @@ async function getDb() {
             if (!blob || blob.size < 1000) throw new Error('El seed llegó vacío o truncado (' + (blob ? blob.size : 0) + ' bytes)');
             return blob;
         };
+        // Watchdog: si algún paso tarda demasiado, avisar en pantalla en qué fase.
+        let phase = 'inicio';
+        const watchdog = setTimeout(() => {
+            showDbFatal(`PGlite lleva >12s en la fase: "${phase}".\n\nProbable bloqueo de IndexedDB (una conexión anterior no se soltó al navegar).`);
+        }, 12000);
         try {
             const t0 = performance.now();
             // 1) abrir la BD persistida
+            console.log('[PGlite] abriendo IndexedDB…'); phase = 'new PGlite(idb)';
             let db = new PGlite(IDB);
             await db.waitReady;
             const tOpen = performance.now();
+            console.log(`[PGlite] abierta en ${(tOpen - t0).toFixed(0)}ms`); phase = 'hasSchema';
             // 2) ¿ya sembrada? (tabla clubs existe) → devolver TAL CUAL, no tocar.
             if (await hasSchema(db)) {
+                phase = 'loadFkMeta';
                 await loadFkMeta(db);
-                console.debug(`[PGlite] abierta en ${(tOpen - t0).toFixed(0)}ms + fkMeta ${(performance.now() - tOpen).toFixed(0)}ms`);
+                clearTimeout(watchdog);
+                console.log(`[PGlite] lista (fkMeta ${(performance.now() - tOpen).toFixed(0)}ms)`);
                 return db;
             }
+            console.log('[PGlite] sin esquema → sembrando desde el seed'); phase = 'reseed';
             // 3) BD sin esquema (1er arranque real) → sembrar desde el seed.
             //    Aquí no hay concurrencia (es la 1ª página), así que borrar es seguro.
             try { await db.close(); } catch { /* noop */ }
@@ -86,9 +96,11 @@ async function getDb() {
             await db.waitReady;
             if (!(await hasSchema(db))) throw new Error('El seed cargó pero no hay esquema (¿seed corrupto?).');
             await loadFkMeta(db);
-            console.debug(`[PGlite] sembrada desde seed en ${(performance.now() - t0).toFixed(0)}ms`);
+            clearTimeout(watchdog);
+            console.log(`[PGlite] sembrada desde seed en ${(performance.now() - t0).toFixed(0)}ms`);
             return db;
         } catch (e) {
+            clearTimeout(watchdog);
             showDbFatal((e && e.stack) || (e && e.message) || String(e));
             dbPromise = null; // permitir reintento en la siguiente llamada
             throw e;
@@ -102,29 +114,49 @@ async function getDb() {
 let FK_BY_NAME = new Map();
 let FK_BY_PAIR = new Map();
 let PK_BY_TABLE = new Map();
-async function loadFkMeta(db) {
-    const { rows } = await q(db, `
-        select tc.constraint_name, kcu.table_name local_table, kcu.column_name local_col,
-               ccu.table_name foreign_table, ccu.column_name foreign_col
-        from information_schema.table_constraints tc
-        join information_schema.key_column_usage kcu on tc.constraint_name = kcu.constraint_name
-        join information_schema.constraint_column_usage ccu on tc.constraint_name = ccu.constraint_name
-        where tc.constraint_type = 'FOREIGN KEY'`);
+
+// Los metadatos de FK/PK son ESTÁTICOS (dependen solo del esquema, que viene
+// fijo en el seed). Consultarlos en information_schema cuesta ~1.2s y corría en
+// CADA navegación (MPA) — se cachean en localStorage. Bump la versión si cambia
+// el esquema.
+const FKMETA_CACHE_KEY = 'pglite-fkmeta-v1';
+
+function buildFkMaps(fkRows, pkRows) {
     FK_BY_NAME = new Map();
     FK_BY_PAIR = new Map();
-    for (const r of rows) {
+    for (const r of fkRows) {
         const fk = { localTable: r.local_table, localCol: r.local_col, foreignTable: r.foreign_table, foreignCol: r.foreign_col };
         FK_BY_NAME.set(r.constraint_name, fk);
         const pair = `${r.local_table}|${r.foreign_table}`;
         if (!FK_BY_PAIR.has(pair)) FK_BY_PAIR.set(pair, []);
         FK_BY_PAIR.get(pair).push(fk);
     }
-    const pk = await q(db, `
+    PK_BY_TABLE = new Map(pkRows.map(r => [r.table_name, r.column_name]));
+}
+
+async function loadFkMeta(db) {
+    try {
+        const cached = localStorage.getItem(FKMETA_CACHE_KEY);
+        if (cached) {
+            const { fk, pk } = JSON.parse(cached);
+            buildFkMaps(fk, pk);
+            return;
+        }
+    } catch { /* cache corrupta → recomputar */ }
+    const { rows: fkRows } = await q(db, `
+        select tc.constraint_name, kcu.table_name local_table, kcu.column_name local_col,
+               ccu.table_name foreign_table, ccu.column_name foreign_col
+        from information_schema.table_constraints tc
+        join information_schema.key_column_usage kcu on tc.constraint_name = kcu.constraint_name
+        join information_schema.constraint_column_usage ccu on tc.constraint_name = ccu.constraint_name
+        where tc.constraint_type = 'FOREIGN KEY'`);
+    const { rows: pkRows } = await q(db, `
         select tc.table_name, kcu.column_name
         from information_schema.table_constraints tc
         join information_schema.key_column_usage kcu on tc.constraint_name = kcu.constraint_name
         where tc.constraint_type = 'PRIMARY KEY'`);
-    PK_BY_TABLE = new Map(pk.rows.map(r => [r.table_name, r.column_name]));
+    buildFkMaps(fkRows, pkRows);
+    try { localStorage.setItem(FKMETA_CACHE_KEY, JSON.stringify({ fk: fkRows, pk: pkRows })); } catch { /* noop */ }
 }
 
 // ── Parseo del string select de PostgREST (cols planas + embeds anidados) ────
