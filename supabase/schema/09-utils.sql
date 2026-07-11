@@ -248,6 +248,10 @@ $function$;
 CREATE OR REPLACE FUNCTION get_team_matches(p_competition_id integer, p_team_nickname text)
  RETURNS TABLE(match_id integer, jornada integer, match_date date, match_time time without time zone, home_team_nickname text, home_team_display_name text, away_team_nickname text, away_team_display_name text, home_goals integer, away_goals integer, is_home boolean, opponent_nickname text, opponent_display_name text, team_goals integer, opponent_goals integer, result text, is_played boolean, is_next_match boolean, is_last_match boolean, stream_url text, resolved_administratively boolean)
  LANGUAGE plpgsql AS $function$
+-- Las columnas OUT (home_goals, away_goals, match_date, match_time) chocan con
+-- las columnas homónimas de `matches` en los SELECT…INTO de abajo; que gane
+-- SIEMPRE la columna (si no, PGlite lanza "column reference … is ambiguous").
+#variable_conflict use_column
 DECLARE
     v_league_team_id INTEGER; v_next_match_id INTEGER; v_last_match_id INTEGER;
 BEGIN
@@ -255,18 +259,20 @@ BEGIN
     WHERE competition_id = p_competition_id AND (nickname ILIKE p_team_nickname OR display_name ILIKE p_team_nickname) LIMIT 1;
     IF v_league_team_id IS NULL THEN RETURN; END IF;
 
-    SELECT id INTO v_next_match_id FROM matches
+    -- matches.id es TEXTO ("J1-P2"); el entero es match_uuid. Usar match_uuid
+    -- para casar con v_next/last_match_id (INTEGER) y el OUT match_id.
+    SELECT match_uuid INTO v_next_match_id FROM matches
     WHERE competition_id = p_competition_id AND (home_league_team_id = v_league_team_id OR away_league_team_id = v_league_team_id)
       AND (home_goals IS NULL OR away_goals IS NULL)
     ORDER BY round_id ASC, match_date ASC, match_time ASC LIMIT 1;
 
-    SELECT id INTO v_last_match_id FROM matches
+    SELECT match_uuid INTO v_last_match_id FROM matches
     WHERE competition_id = p_competition_id AND (home_league_team_id = v_league_team_id OR away_league_team_id = v_league_team_id)
       AND home_goals IS NOT NULL AND away_goals IS NOT NULL
     ORDER BY round_id DESC, match_date DESC, match_time DESC LIMIT 1;
 
     RETURN QUERY
-    SELECT m.id AS match_id, m.round_id AS jornada, m.match_date, m.match_time,
+    SELECT m.match_uuid AS match_id, m.round_id AS jornada, m.match_date, m.match_time,
            ht.nickname AS home_team_nickname, ht.display_name AS home_team_display_name,
            at.nickname AS away_team_nickname, at.display_name AS away_team_display_name,
            m.home_goals, m.away_goals, (m.home_league_team_id = v_league_team_id) AS is_home,
@@ -281,7 +287,7 @@ BEGIN
                     CASE WHEN m.away_goals > m.home_goals THEN 'W' WHEN m.away_goals < m.home_goals THEN 'L' ELSE 'D' END
            END AS result,
            (m.home_goals IS NOT NULL AND m.away_goals IS NOT NULL) AS is_played,
-           (m.id = v_next_match_id) AS is_next_match, (m.id = v_last_match_id) AS is_last_match,
+           (m.match_uuid = v_next_match_id) AS is_next_match, (m.match_uuid = v_last_match_id) AS is_last_match,
            m.stream_url, COALESCE(m.resolved_administratively, false) AS resolved_administratively
     FROM matches m
     LEFT JOIN league_teams ht ON m.home_league_team_id = ht.id

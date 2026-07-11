@@ -7,6 +7,23 @@
 // app funcionen sin cambios. Cubre lo que la app usa; se extiende según haga falta.
 
 import { PGlite } from '../../vendor/pglite/index.js';
+import { SCHEMA_PATCH_VERSION, SCHEMA_PATCHES_SQL } from './schema-patches.js';
+
+// Aplica los parches de esquema (CREATE OR REPLACE idempotentes) a una BD ya
+// sembrada. Solo una vez por versión (flag en localStorage) para no costar en
+// cada navegación.
+async function applySchemaPatches(db) {
+    try {
+        const KEY = 'pglite-schema-patch-version';
+        const cur = parseInt(localStorage.getItem(KEY) || '0', 10);
+        if (cur >= SCHEMA_PATCH_VERSION) return;
+        await db.exec(SCHEMA_PATCHES_SQL);
+        localStorage.setItem(KEY, String(SCHEMA_PATCH_VERSION));
+        console.log(`[PGlite] parches de esquema aplicados (v${SCHEMA_PATCH_VERSION})`);
+    } catch (e) {
+        console.warn('[PGlite] no se pudieron aplicar parches de esquema:', e && e.message || e);
+    }
+}
 
 // ── Init de la BD (carga el seed la 1ª vez, persiste en IndexedDB) ───────────
 
@@ -81,6 +98,8 @@ async function getDb() {
             console.log(`[PGlite] abierta en ${(tOpen - t0).toFixed(0)}ms`); phase = 'hasSchema';
             // 2) ¿ya sembrada? (tabla clubs existe) → devolver TAL CUAL, no tocar.
             if (await hasSchema(db)) {
+                phase = 'schemaPatches';
+                await applySchemaPatches(db);
                 phase = 'loadFkMeta';
                 await loadFkMeta(db);
                 clearTimeout(watchdog);
@@ -198,8 +217,14 @@ function parseSelect(sel) {
 // los da como número y la app hace math (.toFixed, etc.). Coercemos los tipos
 // numéricos a Number para imitar a PostgREST.
 const NUMERIC_OIDS = new Set([20, 21, 23, 26, 700, 701, 1700]); // int8,int2,int4,oid,float4,float8,numeric
+let SLOW_Q_TOTAL = 0, SLOW_Q_COUNT = 0;
 async function q(db, sql) {
+    const t0 = performance.now();
     const res = await db.query(sql);
+    const dt = performance.now() - t0;
+    SLOW_Q_TOTAL += dt; SLOW_Q_COUNT++;
+    if (dt > 150) console.warn(`[PGlite query ${dt.toFixed(0)}ms] ${String(sql).replace(/\s+/g, ' ').trim().slice(0, 180)}`);
+    if (typeof window !== 'undefined') { window.__pgliteQ = { total: Math.round(SLOW_Q_TOTAL), count: SLOW_Q_COUNT }; }
     const nums = (res.fields || []).filter(f => NUMERIC_OIDS.has(f.dataTypeID)).map(f => f.name);
     if (nums.length) for (const row of res.rows) for (const f of nums) {
         const v = row[f];
