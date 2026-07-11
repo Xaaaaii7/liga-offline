@@ -5,7 +5,45 @@ import {
 } from './utils.js';
 
 import { getCrestOrLogo } from './manager-crests.js';
-import { getSupabaseClient } from './supabase-client.js';
+import { getSupabaseClient, usePglite } from './supabase-client.js';
+
+// Simula (o re-simula) un partido IA-vs-IA. En Tauri/PWA (PGlite) corre el
+// motor en el navegador y aplica el SQL directamente contra PGlite; con backend
+// Node usa los endpoints /api/simulate y /api/resimulate del server.
+async function runSimulate(uuid, { resimulate = false } = {}) {
+    if (usePglite()) {
+        const [{ simulateMatchToSql }, { getPgliteDb }] = await Promise.all([
+            import('./simulate-engine.js'),
+            import('./pglite-client.js'),
+        ]);
+        const db = await getPgliteDb();
+        if (resimulate) {
+            // Mismo borrado que resimulateMatch() del server.mjs.
+            await db.exec(`
+                DELETE FROM match_team_stats     WHERE match_uuid = ${uuid};
+                DELETE FROM goal_events          WHERE match_uuid = ${uuid};
+                DELETE FROM match_red_cards      WHERE match_uuid = ${uuid};
+                DELETE FROM match_yellow_cards   WHERE match_uuid = ${uuid};
+                DELETE FROM match_substitutions  WHERE match_uuid = ${uuid};
+                DELETE FROM match_injuries       WHERE match_uuid = ${uuid};
+                DELETE FROM match_player_ratings WHERE match_uuid = ${uuid};
+                DELETE FROM player_suspensions   WHERE origin_match_uuid = ${uuid};
+                UPDATE matches SET home_goals = NULL, away_goals = NULL, resolved_administratively = false WHERE match_uuid = ${uuid};
+            `);
+        }
+        const sb = await getSupabaseClient();
+        const sql = await simulateMatchToSql(sb, uuid);
+        await db.exec(sql);
+        return;
+    }
+    const res = await fetch(resimulate ? '/api/resimulate' : '/api/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_uuid: uuid }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+}
 
 // URL safe para usar en href: rechaza javascript: / data: / vbscript:.
 const safeUrl = (url) => {
@@ -377,13 +415,7 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
             btn.disabled = true;
             btn.textContent = 'Simulando…';
             try {
-                const res = await fetch('/api/simulate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ match_uuid: uuid }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                await runSimulate(uuid);
                 window.location.reload();
             } catch (e) {
                 console.error('Error simulando:', e);
@@ -405,13 +437,7 @@ export const renderJornada = async (jornadas, num, jornadaWrap, labelEl, current
             btn.disabled = true;
             btn.textContent = 'Re-simulando…';
             try {
-                const res = await fetch('/api/resimulate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ match_uuid: uuid }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                await runSimulate(uuid, { resimulate: true });
                 window.location.reload();
             } catch (e) {
                 console.error('Error re-simulando:', e);

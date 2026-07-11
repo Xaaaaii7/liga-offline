@@ -376,3 +376,10 @@ export function createPgliteClient() {
         auth: { getUser: async () => ({ data: { user: null }, error: null }), getSession: async () => ({ data: { session: null }, error: null }) },
     };
 }
+
+// Instancia PGlite cruda (misma singleton que usa el shim). Para ejecutar SQL
+// directo — p.ej. aplicar el SQL que genera el motor de simulación en el
+// navegador. Las escrituras persisten en IndexedDB y el shim las ve al instante.
+export async function getPgliteDb() {
+    return getDb();
+}
